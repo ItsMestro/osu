@@ -11,73 +11,35 @@ using osu.Framework.Audio;
 using osu.Framework.Audio.Sample;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
-using osu.Framework.Graphics.Containers;
-using osu.Framework.Graphics.Shapes;
-using osu.Game.Graphics.Containers;
 using osu.Game.Input.Bindings;
 using osu.Game.Online.API.Requests;
 using osu.Game.Online.API.Requests.Responses;
 using osu.Game.Overlays.Changelog;
+using osuTK.Graphics;
 
 namespace osu.Game.Overlays
 {
-    public class ChangelogOverlay : FullscreenOverlay
+    public class ChangelogOverlay : OnlineOverlay<ChangelogHeader>
     {
         public readonly Bindable<APIChangelogBuild> Current = new Bindable<APIChangelogBuild>();
 
-        protected ChangelogHeader Header;
-
-        private Container<ChangelogContent> content;
-
-        private SampleChannel sampleBack;
+        private Sample sampleBack;
 
         private List<APIChangelogBuild> builds;
 
         protected List<APIUpdateStream> Streams;
 
         public ChangelogOverlay()
-            : base(OverlayColourScheme.Purple)
+            : base(OverlayColourScheme.Purple, false)
         {
         }
 
         [BackgroundDependencyLoader]
         private void load(AudioManager audio)
         {
-            Children = new Drawable[]
-            {
-                new Box
-                {
-                    RelativeSizeAxes = Axes.Both,
-                    Colour = ColourProvider.Background4,
-                },
-                new OsuScrollContainer
-                {
-                    RelativeSizeAxes = Axes.Both,
-                    ScrollbarVisible = false,
-                    Child = new ReverseChildIDFillFlowContainer<Drawable>
-                    {
-                        RelativeSizeAxes = Axes.X,
-                        AutoSizeAxes = Axes.Y,
-                        Direction = FillDirection.Vertical,
-                        Children = new Drawable[]
-                        {
-                            Header = new ChangelogHeader
-                            {
-                                ListingSelected = ShowListing,
-                            },
-                            content = new Container<ChangelogContent>
-                            {
-                                RelativeSizeAxes = Axes.X,
-                                AutoSizeAxes = Axes.Y,
-                            }
-                        },
-                    },
-                },
-            };
+            Header.Build.BindTarget = Current;
 
             sampleBack = audio.Samples.Get(@"UI/generic-select-soft");
-
-            Header.Build.BindTo(Current);
 
             Current.BindValueChanged(e =>
             {
@@ -87,6 +49,13 @@ namespace osu.Game.Overlays
                     loadContent(new ChangelogListing(builds));
             });
         }
+
+        protected override ChangelogHeader CreateHeader() => new ChangelogHeader
+        {
+            ListingSelected = ShowListing,
+        };
+
+        protected override Color4 BackgroundColour => ColourProvider.Background4;
 
         public void ShowListing()
         {
@@ -201,16 +170,16 @@ namespace osu.Game.Overlays
 
         private void loadContent(ChangelogContent newContent)
         {
-            content.FadeTo(0.2f, 300, Easing.OutQuint);
+            Content.FadeTo(0.2f, 300, Easing.OutQuint);
 
             loadContentCancellation?.Cancel();
 
             LoadComponentAsync(newContent, c =>
             {
-                content.FadeIn(300, Easing.OutQuint);
+                Content.FadeIn(300, Easing.OutQuint);
 
                 c.BuildSelected = ShowBuild;
-                content.Child = c;
+                Child = c;
             }, (loadContentCancellation = new CancellationTokenSource()).Token);
         }
     }
