@@ -110,7 +110,7 @@ namespace osu.Game.Screens.Edit.Compose.Components
         /// </summary>
         protected virtual void OnOperationBegan()
         {
-            ChangeHandler?.BeginChange();
+            ChangeHandler.BeginChange();
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace osu.Game.Screens.Edit.Compose.Components
         /// </summary>
         protected virtual void OnOperationEnded()
         {
-            ChangeHandler?.EndChange();
+            ChangeHandler.EndChange();
         }
 
         #region User Input Handling
@@ -320,14 +320,18 @@ namespace osu.Game.Screens.Edit.Compose.Components
         /// <param name="sampleName">The name of the hit sample.</param>
         public void AddHitSample(string sampleName)
         {
-            EditorBeatmap.PerformOnSelection(h =>
+            EditorBeatmap.BeginChange();
+
+            foreach (var h in EditorBeatmap.SelectedHitObjects)
             {
                 // Make sure there isn't already an existing sample
                 if (h.Samples.Any(s => s.Name == sampleName))
-                    return;
+                    continue;
 
-                h.Samples.Add(new HitSampleInfo(sampleName));
-            });
+                h.Samples.Add(new HitSampleInfo { Name = sampleName });
+            }
+
+            EditorBeatmap.EndChange();
         }
 
         /// <summary>
@@ -337,15 +341,19 @@ namespace osu.Game.Screens.Edit.Compose.Components
         /// <exception cref="InvalidOperationException">Throws if any selected object doesn't implement <see cref="IHasComboInformation"/></exception>
         public void SetNewCombo(bool state)
         {
-            EditorBeatmap.PerformOnSelection(h =>
+            EditorBeatmap.BeginChange();
+
+            foreach (var h in EditorBeatmap.SelectedHitObjects)
             {
                 var comboInfo = h as IHasComboInformation;
 
-                if (comboInfo == null || comboInfo.NewCombo == state) return;
+                if (comboInfo == null || comboInfo.NewCombo == state) continue;
 
                 comboInfo.NewCombo = state;
                 EditorBeatmap.Update(h);
-            });
+            }
+
+            EditorBeatmap.EndChange();
         }
 
         /// <summary>
@@ -354,7 +362,12 @@ namespace osu.Game.Screens.Edit.Compose.Components
         /// <param name="sampleName">The name of the hit sample.</param>
         public void RemoveHitSample(string sampleName)
         {
-            EditorBeatmap.PerformOnSelection(h => h.SamplesBindable.RemoveAll(s => s.Name == sampleName));
+            EditorBeatmap.BeginChange();
+
+            foreach (var h in EditorBeatmap.SelectedHitObjects)
+                h.SamplesBindable.RemoveAll(s => s.Name == sampleName);
+
+            EditorBeatmap.EndChange();
         }
 
         #endregion

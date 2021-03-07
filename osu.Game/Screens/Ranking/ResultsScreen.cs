@@ -16,15 +16,15 @@ using osu.Game.Graphics.Containers;
 using osu.Game.Graphics.UserInterface;
 using osu.Game.Input.Bindings;
 using osu.Game.Online.API;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Scoring;
+using osu.Game.Screens.Backgrounds;
 using osu.Game.Screens.Play;
 using osu.Game.Screens.Ranking.Statistics;
 using osuTK;
 
 namespace osu.Game.Screens.Ranking
 {
-    public abstract class ResultsScreen : ScreenWithBeatmapBackground, IKeyBindingHandler<GlobalAction>
+    public abstract class ResultsScreen : OsuScreen, IKeyBindingHandler<GlobalAction>
     {
         protected const float BACKGROUND_BLUR = 20;
         private static readonly float screen_height = 768 - TwoLayerButton.SIZE_EXTENDED.Y;
@@ -33,6 +33,8 @@ namespace osu.Game.Screens.Ranking
 
         // Temporary for now to stop dual transitions. Should respect the current toolbar mode, but there's no way to do so currently.
         public override bool HideOverlaysOnEnter => true;
+
+        protected override BackgroundScreen CreateBackground() => new BackgroundScreenBeatmap(Beatmap.Value);
 
         public readonly Bindable<ScoreInfo> SelectedScore = new Bindable<ScoreInfo>();
 
@@ -54,13 +56,11 @@ namespace osu.Game.Screens.Ranking
         private APIRequest nextPageRequest;
 
         private readonly bool allowRetry;
-        private readonly bool allowWatchingReplay;
 
-        protected ResultsScreen(ScoreInfo score, bool allowRetry, bool allowWatchingReplay = true)
+        protected ResultsScreen(ScoreInfo score, bool allowRetry = true)
         {
             Score = score;
             this.allowRetry = allowRetry;
-            this.allowWatchingReplay = allowWatchingReplay;
 
             SelectedScore.Value = score;
         }
@@ -127,7 +127,15 @@ namespace osu.Game.Screens.Ranking
                                     Origin = Anchor.Centre,
                                     AutoSizeAxes = Axes.Both,
                                     Spacing = new Vector2(5),
-                                    Direction = FillDirection.Horizontal
+                                    Direction = FillDirection.Horizontal,
+                                    Children = new Drawable[]
+                                    {
+                                        new ReplayDownloadButton(null)
+                                        {
+                                            Score = { BindTarget = SelectedScore },
+                                            Width = 300
+                                        },
+                                    }
                                 }
                             }
                         }
@@ -141,21 +149,7 @@ namespace osu.Game.Screens.Ranking
             };
 
             if (Score != null)
-            {
-                // only show flair / animation when arriving after watching a play that isn't autoplay.
-                bool shouldFlair = player != null && !Score.Mods.Any(m => m is ModAutoplay);
-
-                ScorePanelList.AddScore(Score, shouldFlair);
-            }
-
-            if (allowWatchingReplay)
-            {
-                buttons.Add(new ReplayDownloadButton(null)
-                {
-                    Score = { BindTarget = SelectedScore },
-                    Width = 300
-                });
-            }
+                ScorePanelList.AddScore(Score, true);
 
             if (player != null && allowRetry)
             {
@@ -234,18 +228,15 @@ namespace osu.Game.Screens.Ranking
         {
             base.OnEntering(last);
 
-            ApplyToBackground(b =>
-            {
-                b.BlurAmount.Value = BACKGROUND_BLUR;
-                b.FadeTo(0.5f, 250);
-            });
+            ((BackgroundScreenBeatmap)Background).BlurAmount.Value = BACKGROUND_BLUR;
 
+            Background.FadeTo(0.5f, 250);
             bottomPanel.FadeTo(1, 250);
         }
 
         public override bool OnExiting(IScreen next)
         {
-            ApplyToBackground(b => b.FadeTo(1, 250));
+            Background.FadeTo(1, 250);
 
             return base.OnExiting(next);
         }
@@ -295,7 +286,7 @@ namespace osu.Game.Screens.Ranking
                 ScorePanelList.HandleInput = false;
 
                 // Dim background.
-                ApplyToBackground(b => b.FadeTo(0.1f, 150));
+                Background.FadeTo(0.1f, 150);
 
                 detachedPanel = expandedPanel;
             }
@@ -319,7 +310,7 @@ namespace osu.Game.Screens.Ranking
                 ScorePanelList.HandleInput = true;
 
                 // Un-dim background.
-                ApplyToBackground(b => b.FadeTo(0.5f, 150));
+                Background.FadeTo(0.5f, 150);
 
                 detachedPanel = null;
             }

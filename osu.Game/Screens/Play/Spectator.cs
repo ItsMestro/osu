@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
 using osu.Framework.Allocation;
@@ -13,7 +12,6 @@ using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Screens;
-using osu.Game.Audio;
 using osu.Game.Beatmaps;
 using osu.Game.Configuration;
 using osu.Game.Graphics;
@@ -30,14 +28,13 @@ using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Replays;
 using osu.Game.Rulesets.Replays.Types;
 using osu.Game.Scoring;
-using osu.Game.Screens.OnlinePlay.Match.Components;
+using osu.Game.Screens.Multi.Match.Components;
 using osu.Game.Users;
 using osuTK;
 
 namespace osu.Game.Screens.Play
 {
-    [Cached(typeof(IPreviewTrackOwner))]
-    public class Spectator : OsuScreen, IPreviewTrackOwner
+    public class Spectator : OsuScreen
     {
         private readonly User targetUser;
 
@@ -64,12 +61,7 @@ namespace osu.Game.Screens.Play
         [Resolved]
         private RulesetStore rulesets { get; set; }
 
-        [Resolved]
-        private PreviewTrackManager previewTrackManager { get; set; }
-
-        private Score score;
-
-        private readonly object scoreLock = new object();
+        private Replay replay;
 
         private Container beatmapPanelContainer;
 
@@ -206,32 +198,23 @@ namespace osu.Game.Screens.Play
 
         private void userSentFrames(int userId, FrameDataBundle data)
         {
-            // this is not scheduled as it handles propagation of frames even when in a child screen (at which point we are not alive).
-            // probably not the safest way to handle this.
-
             if (userId != targetUser.Id)
                 return;
 
-            lock (scoreLock)
+            // this should never happen as the server sends the user's state on watching,
+            // but is here as a safety measure.
+            if (replay == null)
+                return;
+
+            foreach (var frame in data.Frames)
             {
-                // this should never happen as the server sends the user's state on watching,
-                // but is here as a safety measure.
-                if (score == null)
-                    return;
+                IConvertibleReplayFrame convertibleFrame = rulesetInstance.CreateConvertibleReplayFrame();
+                convertibleFrame.FromLegacy(frame, beatmap.Value.Beatmap);
 
-                // rulesetInstance should be guaranteed to be in sync with the score via scoreLock.
-                Debug.Assert(rulesetInstance != null && rulesetInstance.RulesetInfo.Equals(score.ScoreInfo.Ruleset));
+                var convertedFrame = (ReplayFrame)convertibleFrame;
+                convertedFrame.Time = frame.Time;
 
-                foreach (var frame in data.Frames)
-                {
-                    IConvertibleReplayFrame convertibleFrame = rulesetInstance.CreateConvertibleReplayFrame();
-                    convertibleFrame.FromLegacy(frame, beatmap.Value.Beatmap);
-
-                    var convertedFrame = (ReplayFrame)convertibleFrame;
-                    convertedFrame.Time = frame.Time;
-
-                    score.Replay.Frames.Add(convertedFrame);
-                }
+                replay.Frames.Add(convertedFrame);
             }
         }
 
@@ -264,13 +247,10 @@ namespace osu.Game.Screens.Play
             if (userId != targetUser.Id)
                 return;
 
-            lock (scoreLock)
+            if (replay != null)
             {
-                if (score != null)
-                {
-                    score.Replay.HasReceivedAllFrames = true;
-                    score = null;
-                }
+                replay.HasReceivedAllFrames = true;
+                replay = null;
             }
 
             Schedule(clearDisplay);
@@ -280,7 +260,6 @@ namespace osu.Game.Screens.Play
         {
             watchButton.Enabled.Value = false;
             beatmapPanelContainer.Clear();
-            previewTrackManager.StopAnyPlaying(this);
         }
 
         private void attemptStart()
@@ -304,34 +283,34 @@ namespace osu.Game.Screens.Play
                 return;
             }
 
-            lock (scoreLock)
+            replay ??= new Replay { HasReceivedAllFrames = false };
+
+            var scoreInfo = new ScoreInfo
             {
-                score = new Score
-                {
-                    ScoreInfo = new ScoreInfo
-                    {
-                        Beatmap = resolvedBeatmap,
-                        User = targetUser,
-                        Mods = state.Mods.Select(m => m.ToMod(resolvedRuleset)).ToArray(),
-                        Ruleset = resolvedRuleset.RulesetInfo,
-                    },
-                    Replay = new Replay { HasReceivedAllFrames = false },
-                };
+                Beatmap = resolvedBeatmap,
+                User = targetUser,
+                Mods = state.Mods.Select(m => m.ToMod(resolvedRuleset)).ToArray(),
+                Ruleset = resolvedRuleset.RulesetInfo,
+            };
 
-                ruleset.Value = resolvedRuleset.RulesetInfo;
-                rulesetInstance = resolvedRuleset;
+            ruleset.Value = resolvedRuleset.RulesetInfo;
+            rulesetInstance = resolvedRuleset;
 
-                beatmap.Value = beatmaps.GetWorkingBeatmap(resolvedBeatmap);
-                watchButton.Enabled.Value = true;
+            beatmap.Value = beatmaps.GetWorkingBeatmap(resolvedBeatmap);
+            watchButton.Enabled.Value = true;
 
-                this.Push(new SpectatorPlayerLoader(score));
-            }
+            this.Push(new SpectatorPlayerLoader(new Score
+            {
+                ScoreInfo = scoreInfo,
+                Replay = replay,
+            }));
         }
 
         private void showBeatmapPanel(SpectatorState state)
         {
             if (state?.BeatmapID == null)
             {
+                beatmapPanelContainer.Clear();
                 onlineBeatmap = null;
                 return;
             }
@@ -362,12 +341,6 @@ namespace osu.Game.Screens.Play
                 return;
 
             beatmaps.Download(onlineBeatmap);
-        }
-
-        public override bool OnExiting(IScreen next)
-        {
-            previewTrackManager.StopAnyPlaying(this);
-            return base.OnExiting(next);
         }
 
         protected override void Dispose(bool isDisposing)

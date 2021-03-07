@@ -43,8 +43,10 @@ namespace osu.Game.Rulesets.Osu.Tests
             showResult(HitResult.Great);
 
             AddUntilStep("judgements shown", () => this.ChildrenOfType<TestDrawableOsuJudgement>().Any());
-            AddAssert("hit lighting has no transforms", () => this.ChildrenOfType<TestDrawableOsuJudgement>().All(judgement => !judgement.Lighting.Transforms.Any()));
-            AddAssert("hit lighting hidden", () => this.ChildrenOfType<TestDrawableOsuJudgement>().All(judgement => judgement.Lighting.Alpha == 0));
+            AddAssert("judgement body immediately visible",
+                () => this.ChildrenOfType<TestDrawableOsuJudgement>().All(judgement => judgement.JudgementBody.Alpha == 1));
+            AddAssert("hit lighting hidden",
+                () => this.ChildrenOfType<TestDrawableOsuJudgement>().All(judgement => judgement.Lighting.Alpha == 0));
         }
 
         [Test]
@@ -55,7 +57,10 @@ namespace osu.Game.Rulesets.Osu.Tests
             showResult(HitResult.Great);
 
             AddUntilStep("judgements shown", () => this.ChildrenOfType<TestDrawableOsuJudgement>().Any());
-            AddUntilStep("hit lighting shown", () => this.ChildrenOfType<TestDrawableOsuJudgement>().Any(judgement => judgement.Lighting.Alpha > 0));
+            AddAssert("judgement body not immediately visible",
+                () => this.ChildrenOfType<TestDrawableOsuJudgement>().All(judgement => judgement.JudgementBody.Alpha > 0 && judgement.JudgementBody.Alpha < 1));
+            AddAssert("hit lighting shown",
+                () => this.ChildrenOfType<TestDrawableOsuJudgement>().All(judgement => judgement.Lighting.Alpha > 0));
         }
 
         private void showResult(HitResult result)
@@ -84,13 +89,7 @@ namespace osu.Game.Rulesets.Osu.Tests
                         Children = new Drawable[]
                         {
                             pool,
-                            pool.Get(j => j.Apply(new JudgementResult(new HitObject
-                            {
-                                StartTime = Time.Current
-                            }, new Judgement())
-                            {
-                                Type = result,
-                            }, null)).With(j =>
+                            pool.Get(j => j.Apply(new JudgementResult(new HitObject(), new Judgement()) { Type = result }, null)).With(j =>
                             {
                                 j.Anchor = Anchor.Centre;
                                 j.Origin = Anchor.Centre;
@@ -107,7 +106,7 @@ namespace osu.Game.Rulesets.Osu.Tests
         private class TestDrawableOsuJudgement : DrawableOsuJudgement
         {
             public new SkinnableSprite Lighting => base.Lighting;
-            public new SkinnableDrawable JudgementBody => base.JudgementBody;
+            public new Container JudgementBody => base.JudgementBody;
         }
     }
 }

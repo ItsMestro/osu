@@ -3,6 +3,7 @@
 
 using NUnit.Framework;
 using osu.Framework.Graphics;
+using osu.Framework.Graphics.Sprites;
 using osu.Framework.Utils;
 using osu.Game.Graphics.Sprites;
 using osu.Game.Graphics.UserInterface;
@@ -13,41 +14,44 @@ namespace osu.Game.Tests.Visual.Gameplay
     [TestFixture]
     public class TestSceneStarCounter : OsuTestScene
     {
-        private readonly StarCounter starCounter;
-        private readonly OsuSpriteText starsLabel;
-
         public TestSceneStarCounter()
         {
-            starCounter = new StarCounter
+            StarCounter stars = new StarCounter
             {
                 Origin = Anchor.Centre,
                 Anchor = Anchor.Centre,
+                Current = 5,
             };
 
-            Add(starCounter);
+            Add(stars);
 
-            starsLabel = new OsuSpriteText
+            SpriteText starsLabel = new OsuSpriteText
             {
                 Origin = Anchor.Centre,
                 Anchor = Anchor.Centre,
                 Scale = new Vector2(2),
                 Y = 50,
+                Text = stars.Current.ToString("0.00"),
             };
 
             Add(starsLabel);
 
-            setStars(5);
+            AddRepeatStep(@"random value", delegate
+            {
+                stars.Current = RNG.NextSingle() * (stars.StarCount + 1);
+                starsLabel.Text = stars.Current.ToString("0.00");
+            }, 10);
 
-            AddRepeatStep("random value", () => setStars(RNG.NextSingle() * (starCounter.StarCount + 1)), 10);
-            AddSliderStep("exact value", 0f, 10f, 5f, setStars);
-            AddStep("stop animation", () => starCounter.StopAnimation());
-            AddStep("reset", () => setStars(0));
-        }
+            AddStep(@"Stop animation", delegate
+            {
+                stars.StopAnimation();
+            });
 
-        private void setStars(float stars)
-        {
-            starCounter.Current = stars;
-            starsLabel.Text = starCounter.Current.ToString("0.00");
+            AddStep(@"Reset", delegate
+            {
+                stars.Current = 0;
+                starsLabel.Text = stars.Current.ToString("0.00");
+            });
         }
     }
 }

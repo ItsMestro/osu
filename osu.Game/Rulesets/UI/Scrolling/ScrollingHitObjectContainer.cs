@@ -2,10 +2,13 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Bindables;
+using osu.Framework.Caching;
 using osu.Framework.Graphics;
 using osu.Framework.Layout;
+using osu.Framework.Threading;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Objects.Types;
 using osuTK;
@@ -16,22 +19,17 @@ namespace osu.Game.Rulesets.UI.Scrolling
     {
         private readonly IBindable<double> timeRange = new BindableDouble();
         private readonly IBindable<ScrollingDirection> direction = new Bindable<ScrollingDirection>();
-
-        /// <summary>
-        /// Hit objects which require lifetime computation in the next update call.
-        /// </summary>
-        private readonly HashSet<DrawableHitObject> toComputeLifetime = new HashSet<DrawableHitObject>();
-
-        /// <summary>
-        /// A set containing all <see cref="HitObjectContainer.AliveObjects"/> which have an up-to-date layout.
-        /// </summary>
-        private readonly HashSet<DrawableHitObject> layoutComputed = new HashSet<DrawableHitObject>();
+        private readonly Dictionary<DrawableHitObject, InitialState> hitObjectInitialStateCache = new Dictionary<DrawableHitObject, InitialState>();
 
         [Resolved]
         private IScrollingInfo scrollingInfo { get; set; }
 
         // Responds to changes in the layout. When the layout changes, all hit object states must be recomputed.
         private readonly LayoutValue layoutCache = new LayoutValue(Invalidation.RequiredParentSizeToFit | Invalidation.DrawInfo);
+
+        // A combined cache across all hit object states to reduce per-update iterations.
+        // When invalidated, one or more (but not necessarily all) hitobject states must be re-validated.
+        private readonly Cached combinedObjCache = new Cached();
 
         public ScrollingHitObjectContainer()
         {
@@ -50,12 +48,37 @@ namespace osu.Game.Rulesets.UI.Scrolling
             timeRange.ValueChanged += _ => layoutCache.Invalidate();
         }
 
+        public override void Add(DrawableHitObject hitObject)
+        {
+            combinedObjCache.Invalidate();
+            hitObject.DefaultsApplied += onDefaultsApplied;
+            base.Add(hitObject);
+        }
+
+        public override bool Remove(DrawableHitObject hitObject)
+        {
+            var result = base.Remove(hitObject);
+
+            if (result)
+            {
+                combinedObjCache.Invalidate();
+                hitObjectInitialStateCache.Remove(hitObject);
+
+                hitObject.DefaultsApplied -= onDefaultsApplied;
+            }
+
+            return result;
+        }
+
         public override void Clear(bool disposeChildren = true)
         {
+            foreach (var h in Objects)
+                h.DefaultsApplied -= onDefaultsApplied;
+
             base.Clear(disposeChildren);
 
-            toComputeLifetime.Clear();
-            layoutComputed.Clear();
+            combinedObjCache.Invalidate();
+            hitObjectInitialStateCache.Clear();
         }
 
         /// <summary>
@@ -150,40 +173,15 @@ namespace osu.Game.Rulesets.UI.Scrolling
             }
         }
 
-        protected override void OnAdd(DrawableHitObject drawableHitObject) => onAddRecursive(drawableHitObject);
-
-        protected override void OnRemove(DrawableHitObject drawableHitObject) => onRemoveRecursive(drawableHitObject);
-
-        private void onAddRecursive(DrawableHitObject hitObject)
+        private void onDefaultsApplied(DrawableHitObject drawableObject)
         {
-            invalidateHitObject(hitObject);
-
-            hitObject.DefaultsApplied += invalidateHitObject;
-
-            foreach (var nested in hitObject.NestedHitObjects)
-                onAddRecursive(nested);
-        }
-
-        private void onRemoveRecursive(DrawableHitObject hitObject)
-        {
-            toComputeLifetime.Remove(hitObject);
-            layoutComputed.Remove(hitObject);
-
-            hitObject.DefaultsApplied -= invalidateHitObject;
-
-            foreach (var nested in hitObject.NestedHitObjects)
-                onRemoveRecursive(nested);
-        }
-
-        /// <summary>
-        /// Make this <see cref="DrawableHitObject"/> lifetime and layout computed in next update.
-        /// </summary>
-        private void invalidateHitObject(DrawableHitObject hitObject)
-        {
-            // Lifetime computation is delayed until next update because
-            // when the hit object is not pooled this container is not loaded here and `scrollLength` cannot be computed.
-            toComputeLifetime.Add(hitObject);
-            layoutComputed.Remove(hitObject);
+            // The cache may not exist if the hitobject state hasn't been computed yet (e.g. if the hitobject was added + defaults applied in the same frame).
+            // In such a case, combinedObjCache will take care of updating the hitobject.
+            if (hitObjectInitialStateCache.TryGetValue(drawableObject, out var state))
+            {
+                combinedObjCache.Invalidate();
+                state.Cache.Invalidate();
+            }
         }
 
         private float scrollLength;
@@ -194,18 +192,17 @@ namespace osu.Game.Rulesets.UI.Scrolling
 
             if (!layoutCache.IsValid)
             {
-                toComputeLifetime.Clear();
-
-                foreach (var hitObject in Objects)
-                {
-                    if (hitObject.HitObject != null)
-                        toComputeLifetime.Add(hitObject);
-                }
-
-                layoutComputed.Clear();
+                foreach (var state in hitObjectInitialStateCache.Values)
+                    state.Cache.Invalidate();
+                combinedObjCache.Invalidate();
 
                 scrollingInfo.Algorithm.Reset();
 
+                layoutCache.Validate();
+            }
+
+            if (!combinedObjCache.IsValid)
+            {
                 switch (direction.Value)
                 {
                     case ScrollingDirection.Up:
@@ -218,33 +215,32 @@ namespace osu.Game.Rulesets.UI.Scrolling
                         break;
                 }
 
-                layoutCache.Validate();
+                foreach (var obj in Objects)
+                {
+                    if (!hitObjectInitialStateCache.TryGetValue(obj, out var state))
+                        state = hitObjectInitialStateCache[obj] = new InitialState(new Cached());
+
+                    if (state.Cache.IsValid)
+                        continue;
+
+                    state.ScheduledComputation?.Cancel();
+                    state.ScheduledComputation = computeInitialStateRecursive(obj);
+
+                    computeLifetimeStartRecursive(obj);
+
+                    state.Cache.Validate();
+                }
+
+                combinedObjCache.Validate();
             }
-
-            foreach (var hitObject in toComputeLifetime)
-                hitObject.LifetimeStart = computeOriginAdjustedLifetimeStart(hitObject);
-
-            toComputeLifetime.Clear();
         }
 
-        protected override void UpdateAfterChildrenLife()
+        private void computeLifetimeStartRecursive(DrawableHitObject hitObject)
         {
-            base.UpdateAfterChildrenLife();
+            hitObject.LifetimeStart = computeOriginAdjustedLifetimeStart(hitObject);
 
-            // We need to calculate hit object positions (including nested hit objects) as soon as possible after lifetimes
-            // to prevent hit objects displayed in a wrong position for one frame.
-            // Only AliveObjects need to be considered for layout (reduces overhead in the case of scroll speed changes).
-            foreach (var obj in AliveObjects)
-            {
-                updatePosition(obj, Time.Current);
-
-                if (layoutComputed.Contains(obj))
-                    continue;
-
-                updateLayoutRecursive(obj);
-
-                layoutComputed.Add(obj);
-            }
+            foreach (var obj in hitObject.NestedHitObjects)
+                computeLifetimeStartRecursive(obj);
         }
 
         private double computeOriginAdjustedLifetimeStart(DrawableHitObject hitObject)
@@ -275,7 +271,7 @@ namespace osu.Game.Rulesets.UI.Scrolling
             return scrollingInfo.Algorithm.GetDisplayStartTime(hitObject.HitObject.StartTime, originAdjustment, timeRange.Value, scrollLength);
         }
 
-        private void updateLayoutRecursive(DrawableHitObject hitObject)
+        private ScheduledDelegate computeInitialStateRecursive(DrawableHitObject hitObject) => hitObject.Schedule(() =>
         {
             if (hitObject.HitObject is IHasDuration e)
             {
@@ -295,11 +291,20 @@ namespace osu.Game.Rulesets.UI.Scrolling
 
             foreach (var obj in hitObject.NestedHitObjects)
             {
-                updateLayoutRecursive(obj);
+                computeInitialStateRecursive(obj);
 
                 // Nested hitobjects don't need to scroll, but they do need accurate positions
                 updatePosition(obj, hitObject.HitObject.StartTime);
             }
+        });
+
+        protected override void UpdateAfterChildrenLife()
+        {
+            base.UpdateAfterChildrenLife();
+
+            // We need to calculate hitobject positions as soon as possible after lifetimes so that hitobjects get the final say in their positions
+            foreach (var obj in AliveObjects)
+                updatePosition(obj, Time.Current);
         }
 
         private void updatePosition(DrawableHitObject hitObject, double currentTime)
@@ -321,6 +326,20 @@ namespace osu.Game.Rulesets.UI.Scrolling
                 case ScrollingDirection.Right:
                     hitObject.X = -scrollingInfo.Algorithm.PositionAt(hitObject.HitObject.StartTime, currentTime, timeRange.Value, scrollLength);
                     break;
+            }
+        }
+
+        private class InitialState
+        {
+            [NotNull]
+            public readonly Cached Cache;
+
+            [CanBeNull]
+            public ScheduledDelegate ScheduledComputation;
+
+            public InitialState(Cached cache)
+            {
+                Cache = cache;
             }
         }
     }

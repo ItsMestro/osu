@@ -3,7 +3,6 @@
 
 using System;
 using osu.Framework.Graphics.Sprites;
-using osu.Framework.Localisation;
 
 namespace osu.Game.Skinning
 {
@@ -22,9 +21,9 @@ namespace osu.Game.Skinning
                 textDrawable.Text = Text;
         }
 
-        private LocalisableString text;
+        private string text;
 
-        public LocalisableString Text
+        public string Text
         {
             get => text;
             set

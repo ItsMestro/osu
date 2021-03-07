@@ -18,8 +18,6 @@ namespace osu.Game.Online.API
             Id = 1001,
         });
 
-        public BindableList<User> Friends { get; } = new BindableList<User>();
-
         public Bindable<UserActivity> Activity { get; } = new Bindable<UserActivity>();
 
         public string AccessToken => "token";
@@ -28,9 +26,7 @@ namespace osu.Game.Online.API
 
         public string ProvidedUsername => LocalUser.Value.Username;
 
-        public string APIEndpointUrl => "http://localhost";
-
-        public string WebsiteRootUrl => "http://localhost";
+        public string Endpoint => "http://localhost";
 
         /// <summary>
         /// Provide handling logic for an arbitrary API request.
@@ -83,8 +79,6 @@ namespace osu.Game.Online.API
             state.Value = APIState.Offline;
         }
 
-        public IHubClientConnector GetHubConnector(string clientName, string endpoint) => null;
-
         public RegistrationRequest.RegistrationRequestErrors CreateAccount(string email, string username, string password)
         {
             Thread.Sleep(200);
@@ -92,9 +86,5 @@ namespace osu.Game.Online.API
         }
 
         public void SetState(APIState newState) => state.Value = newState;
-
-        IBindable<User> IAPIProvider.LocalUser => LocalUser;
-        IBindableList<User> IAPIProvider.Friends => Friends;
-        IBindable<UserActivity> IAPIProvider.Activity => Activity;
     }
 }

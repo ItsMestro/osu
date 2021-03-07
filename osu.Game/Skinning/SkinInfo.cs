@@ -10,10 +10,6 @@ namespace osu.Game.Skinning
 {
     public class SkinInfo : IHasFiles<SkinFileInfo>, IEquatable<SkinInfo>, IHasPrimaryKey, ISoftDelete
     {
-        internal const int DEFAULT_SKIN = 0;
-        internal const int CLASSIC_SKIN = -1;
-        internal const int RANDOM_SKIN = -2;
-
         public int ID { get; set; }
 
         public string Name { get; set; }
@@ -30,7 +26,6 @@ namespace osu.Game.Skinning
 
         public static SkinInfo Default { get; } = new SkinInfo
         {
-            ID = DEFAULT_SKIN,
             Name = "osu!lazer",
             Creator = "team osu!"
         };

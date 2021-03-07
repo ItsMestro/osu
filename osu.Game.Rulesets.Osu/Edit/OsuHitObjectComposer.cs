@@ -16,6 +16,7 @@ using osu.Game.Rulesets.Edit;
 using osu.Game.Rulesets.Edit.Tools;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects;
+using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Osu.Objects;
 using osu.Game.Rulesets.UI;
 using osu.Game.Screens.Edit.Components.TernaryButtons;
@@ -79,8 +80,8 @@ namespace osu.Game.Rulesets.Osu.Edit
             updateDistanceSnapGrid();
         }
 
-        protected override ComposeBlueprintContainer CreateBlueprintContainer()
-            => new OsuBlueprintContainer(this);
+        protected override ComposeBlueprintContainer CreateBlueprintContainer(IEnumerable<DrawableHitObject> hitObjects)
+            => new OsuBlueprintContainer(hitObjects);
 
         private DistanceSnapGrid distanceSnapGrid;
         private Container distanceSnapGridContainer;
@@ -105,19 +106,10 @@ namespace osu.Game.Rulesets.Osu.Edit
             }
         }
 
-        public override SnapResult SnapScreenSpacePositionToValidPosition(Vector2 screenSpacePosition)
+        public override SnapResult SnapScreenSpacePositionToValidTime(Vector2 screenSpacePosition)
         {
             if (snapToVisibleBlueprints(screenSpacePosition, out var snapResult))
                 return snapResult;
-
-            return new SnapResult(screenSpacePosition, null);
-        }
-
-        public override SnapResult SnapScreenSpacePositionToValidTime(Vector2 screenSpacePosition)
-        {
-            var positionSnap = SnapScreenSpacePositionToValidPosition(screenSpacePosition);
-            if (positionSnap.ScreenSpacePosition != screenSpacePosition)
-                return positionSnap;
 
             // will be null if distance snap is disabled or not feasible for the current time value.
             if (distanceSnapGrid == null)

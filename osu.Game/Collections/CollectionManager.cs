@@ -138,44 +138,36 @@ namespace osu.Game.Collections
 
             PostNotification?.Invoke(notification);
 
-            var collections = readCollections(stream, notification);
-            await importCollections(collections);
-
-            notification.CompletionText = $"Imported {collections.Count} collections";
-            notification.State = ProgressNotificationState.Completed;
-        }
-
-        private Task importCollections(List<BeatmapCollection> newCollections)
-        {
-            var tcs = new TaskCompletionSource<bool>();
+            var collection = readCollections(stream, notification);
+            bool importCompleted = false;
 
             Schedule(() =>
             {
-                try
-                {
-                    foreach (var newCol in newCollections)
-                    {
-                        var existing = Collections.FirstOrDefault(c => c.Name.Value == newCol.Name.Value);
-                        if (existing == null)
-                            Collections.Add(existing = new BeatmapCollection { Name = { Value = newCol.Name.Value } });
-
-                        foreach (var newBeatmap in newCol.Beatmaps)
-                        {
-                            if (!existing.Beatmaps.Contains(newBeatmap))
-                                existing.Beatmaps.Add(newBeatmap);
-                        }
-                    }
-
-                    tcs.SetResult(true);
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(e, "Failed to import collection.");
-                    tcs.SetException(e);
-                }
+                importCollections(collection);
+                importCompleted = true;
             });
 
-            return tcs.Task;
+            while (!IsDisposed && !importCompleted)
+                await Task.Delay(10);
+
+            notification.CompletionText = $"Imported {collection.Count} collections";
+            notification.State = ProgressNotificationState.Completed;
+        }
+
+        private void importCollections(List<BeatmapCollection> newCollections)
+        {
+            foreach (var newCol in newCollections)
+            {
+                var existing = Collections.FirstOrDefault(c => c.Name == newCol.Name);
+                if (existing == null)
+                    Collections.Add(existing = new BeatmapCollection { Name = { Value = newCol.Name.Value } });
+
+                foreach (var newBeatmap in newCol.Beatmaps)
+                {
+                    if (!existing.Beatmaps.Contains(newBeatmap))
+                        existing.Beatmaps.Add(newBeatmap);
+                }
+            }
         }
 
         private List<BeatmapCollection> readCollections(Stream stream, ProgressNotification notification = null)

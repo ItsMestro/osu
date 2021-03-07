@@ -1,7 +1,7 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using osu.Framework.Allocation;
@@ -11,7 +11,6 @@ using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
-using osu.Framework.Localisation;
 using osu.Framework.Platform;
 using osu.Game.Configuration;
 using osu.Game.Graphics.Containers;
@@ -26,13 +25,9 @@ namespace osu.Game.Overlays.Settings.Sections.Graphics
 
         private FillFlowContainer<SettingsSlider<float>> scalingSettings;
 
-        private readonly IBindable<Display> currentDisplay = new Bindable<Display>();
-        private readonly IBindableList<WindowMode> windowModes = new BindableList<WindowMode>();
-
         private Bindable<ScalingMode> scalingMode;
         private Bindable<Size> sizeFullscreen;
-
-        private readonly BindableList<Size> resolutions = new BindableList<Size>(new[] { new Size(9999, 9999) });
+        private readonly IBindableList<WindowMode> windowModes = new BindableList<WindowMode>();
 
         [Resolved]
         private OsuGameBase game { get; set; }
@@ -58,25 +53,22 @@ namespace osu.Game.Overlays.Settings.Sections.Graphics
             scalingPositionY = osuConfig.GetBindable<float>(OsuSetting.ScalingPositionY);
 
             if (host.Window != null)
-            {
-                currentDisplay.BindTo(host.Window.CurrentDisplayBindable);
                 windowModes.BindTo(host.Window.SupportedWindowModes);
-            }
+
+            Container resolutionSettingsContainer;
 
             Children = new Drawable[]
             {
                 windowModeDropdown = new SettingsDropdown<WindowMode>
                 {
                     LabelText = "Screen mode",
-                    ItemSource = windowModes,
                     Current = config.GetBindable<WindowMode>(FrameworkSetting.WindowMode),
+                    ItemSource = windowModes,
                 },
-                resolutionDropdown = new ResolutionSettingsDropdown
+                resolutionSettingsContainer = new Container
                 {
-                    LabelText = "Resolution",
-                    ShowsDefaultIndicator = false,
-                    ItemSource = resolutions,
-                    Current = sizeFullscreen
+                    RelativeSizeAxes = Axes.X,
+                    AutoSizeAxes = Axes.Y
                 },
                 new SettingsSlider<float, UIScaleSlider>
                 {
@@ -133,39 +125,32 @@ namespace osu.Game.Overlays.Settings.Sections.Graphics
                     }
                 },
             };
-        }
-
-        protected override void LoadComplete()
-        {
-            base.LoadComplete();
 
             scalingSettings.ForEach(s => bindPreviewEvent(s.Current));
 
-            windowModeDropdown.Current.ValueChanged += _ => updateResolutionDropdown();
+            var resolutions = getResolutions();
 
-            windowModes.BindCollectionChanged((sender, args) =>
+            if (resolutions.Count > 1)
             {
-                if (windowModes.Count > 1)
-                    windowModeDropdown.Show();
-                else
-                    windowModeDropdown.Hide();
-            }, true);
-
-            currentDisplay.BindValueChanged(display => Schedule(() =>
-            {
-                resolutions.RemoveRange(1, resolutions.Count - 1);
-
-                if (display.NewValue != null)
+                resolutionSettingsContainer.Child = resolutionDropdown = new ResolutionSettingsDropdown
                 {
-                    resolutions.AddRange(display.NewValue.DisplayModes
-                                                .Where(m => m.Size.Width >= 800 && m.Size.Height >= 600)
-                                                .OrderByDescending(m => Math.Max(m.Size.Height, m.Size.Width))
-                                                .Select(m => m.Size)
-                                                .Distinct());
-                }
+                    LabelText = "Resolution",
+                    ShowsDefaultIndicator = false,
+                    Items = resolutions,
+                    Current = sizeFullscreen
+                };
 
-                updateResolutionDropdown();
-            }), true);
+                windowModeDropdown.Current.BindValueChanged(mode =>
+                {
+                    if (mode.NewValue == WindowMode.Fullscreen)
+                    {
+                        resolutionDropdown.Show();
+                        sizeFullscreen.TriggerChange();
+                    }
+                    else
+                        resolutionDropdown.Hide();
+                }, true);
+            }
 
             scalingMode.BindValueChanged(mode =>
             {
@@ -178,15 +163,24 @@ namespace osu.Game.Overlays.Settings.Sections.Graphics
                 scalingSettings.ForEach(s => s.TransferValueOnCommit = mode.NewValue == ScalingMode.Everything);
             }, true);
 
-            void updateResolutionDropdown()
-            {
-                if (resolutions.Count > 1 && windowModeDropdown.Current.Value == WindowMode.Fullscreen)
-                    resolutionDropdown.Show();
-                else
-                    resolutionDropdown.Hide();
-            }
+            windowModes.CollectionChanged += (sender, args) => windowModesChanged();
+
+            windowModesChanged();
         }
 
+        private void windowModesChanged()
+        {
+            if (windowModes.Count > 1)
+                windowModeDropdown.Show();
+            else
+                windowModeDropdown.Hide();
+        }
+
+        /// <summary>
+        /// Create a delayed bindable which only updates when a condition is met.
+        /// </summary>
+        /// <param name="bindable">The config bindable.</param>
+        /// <returns>A bindable which will propagate updates with a delay.</returns>
         private void bindPreviewEvent(Bindable<float> bindable)
         {
             bindable.ValueChanged += _ =>
@@ -209,6 +203,24 @@ namespace osu.Game.Overlays.Settings.Sections.Graphics
 
             preview.FadeOutFromOne(1500);
             preview.Expire();
+        }
+
+        private IReadOnlyList<Size> getResolutions()
+        {
+            var resolutions = new List<Size> { new Size(9999, 9999) };
+            var currentDisplay = game.Window?.CurrentDisplay.Value;
+
+            if (currentDisplay != null)
+            {
+                resolutions.AddRange(currentDisplay.DisplayModes
+                                                   .Where(m => m.Size.Width >= 800 && m.Size.Height >= 600)
+                                                   .OrderByDescending(m => m.Size.Width)
+                                                   .ThenByDescending(m => m.Size.Height)
+                                                   .Select(m => m.Size)
+                                                   .Distinct());
+            }
+
+            return resolutions;
         }
 
         private class ScalingPreview : ScalingContainer
@@ -235,7 +247,7 @@ namespace osu.Game.Overlays.Settings.Sections.Graphics
 
             private class ResolutionDropdownControl : DropdownControl
             {
-                protected override LocalisableString GenerateItemText(Size item)
+                protected override string GenerateItemText(Size item)
                 {
                     if (item == new Size(9999, 9999))
                         return "Default";

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using osu.Framework.Allocation;
-using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Animations;
 using osu.Framework.Graphics.OpenGL.Textures;
@@ -71,8 +70,6 @@ namespace osu.Game.Skinning
             [Resolved(canBeNull: true)]
             private IAnimationTimeReference timeReference { get; set; }
 
-            private readonly Bindable<double> animationStartTime = new BindableDouble();
-
             public SkinnableTextureAnimation(bool startAtCurrentTime = true)
                 : base(startAtCurrentTime)
             {
@@ -85,18 +82,8 @@ namespace osu.Game.Skinning
                 if (timeReference != null)
                 {
                     Clock = timeReference.Clock;
-                    animationStartTime.BindTo(timeReference.AnimationStartTime);
+                    PlaybackPosition = timeReference.Clock.CurrentTime - timeReference.AnimationStartTime;
                 }
-
-                animationStartTime.BindValueChanged(_ => updatePlaybackPosition(), true);
-            }
-
-            private void updatePlaybackPosition()
-            {
-                if (timeReference == null)
-                    return;
-
-                PlaybackPosition = timeReference.Clock.CurrentTime - timeReference.AnimationStartTime.Value;
             }
         }
 

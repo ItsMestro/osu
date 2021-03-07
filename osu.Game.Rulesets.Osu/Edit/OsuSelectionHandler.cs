@@ -21,12 +21,12 @@ namespace osu.Game.Rulesets.Osu.Edit
         {
             base.OnSelectionChanged();
 
-            Quad quad = selectedMovableObjects.Length > 0 ? getSurroundingQuad(selectedMovableObjects) : new Quad();
+            bool canOperate = EditorBeatmap.SelectedHitObjects.Count > 1 || EditorBeatmap.SelectedHitObjects.Any(s => s is Slider);
 
-            SelectionBox.CanRotate = quad.Width > 0 || quad.Height > 0;
-            SelectionBox.CanScaleX = quad.Width > 0;
-            SelectionBox.CanScaleY = quad.Height > 0;
-            SelectionBox.CanReverse = EditorBeatmap.SelectedHitObjects.Count > 1 || EditorBeatmap.SelectedHitObjects.Any(s => s is Slider);
+            SelectionBox.CanRotate = canOperate;
+            SelectionBox.CanScaleX = canOperate;
+            SelectionBox.CanScaleY = canOperate;
+            SelectionBox.CanReverse = canOperate;
         }
 
         protected override void OnOperationEnded()
@@ -45,12 +45,12 @@ namespace osu.Game.Rulesets.Osu.Edit
 
         public override bool HandleReverse()
         {
-            var hitObjects = EditorBeatmap.SelectedHitObjects;
+            var hitObjects = selectedMovableObjects;
 
             double endTime = hitObjects.Max(h => h.GetEndTime());
             double startTime = hitObjects.Min(h => h.StartTime);
 
-            bool moreThanOneObject = hitObjects.Count > 1;
+            bool moreThanOneObject = hitObjects.Length > 1;
 
             foreach (var h in hitObjects)
             {
@@ -157,16 +157,10 @@ namespace osu.Game.Rulesets.Osu.Edit
 
                 foreach (var h in hitObjects)
                 {
-                    var newPosition = h.Position;
-
-                    // guard against no-ops and NaN.
-                    if (scale.X != 0 && quad.Width > 0)
-                        newPosition.X = quad.TopLeft.X + (h.X - quad.TopLeft.X) / quad.Width * (quad.Width + scale.X);
-
-                    if (scale.Y != 0 && quad.Height > 0)
-                        newPosition.Y = quad.TopLeft.Y + (h.Y - quad.TopLeft.Y) / quad.Height * (quad.Height + scale.Y);
-
-                    h.Position = newPosition;
+                    h.Position = new Vector2(
+                        quad.TopLeft.X + (h.X - quad.TopLeft.X) / quad.Width * (quad.Width + scale.X),
+                        quad.TopLeft.Y + (h.Y - quad.TopLeft.Y) / quad.Height * (quad.Height + scale.Y)
+                    );
                 }
             }
 
@@ -213,17 +207,11 @@ namespace osu.Game.Rulesets.Osu.Edit
 
             Quad quad = getSurroundingQuad(hitObjects);
 
-            Vector2 newTopLeft = quad.TopLeft + delta;
-            if (newTopLeft.X < 0)
-                delta.X -= newTopLeft.X;
-            if (newTopLeft.Y < 0)
-                delta.Y -= newTopLeft.Y;
-
-            Vector2 newBottomRight = quad.BottomRight + delta;
-            if (newBottomRight.X > DrawWidth)
-                delta.X -= newBottomRight.X - DrawWidth;
-            if (newBottomRight.Y > DrawHeight)
-                delta.Y -= newBottomRight.Y - DrawHeight;
+            if (quad.TopLeft.X + delta.X < 0 ||
+                quad.TopLeft.Y + delta.Y < 0 ||
+                quad.BottomRight.X + delta.X > DrawWidth ||
+                quad.BottomRight.Y + delta.Y > DrawHeight)
+                return false;
 
             foreach (var h in hitObjects)
                 h.Position += delta;
@@ -236,20 +224,7 @@ namespace osu.Game.Rulesets.Osu.Edit
         /// </summary>
         /// <param name="hitObjects">The hit objects to calculate a quad for.</param>
         private Quad getSurroundingQuad(OsuHitObject[] hitObjects) =>
-            getSurroundingQuad(hitObjects.SelectMany(h =>
-            {
-                if (h is IHasPath path)
-                {
-                    return new[]
-                    {
-                        h.Position,
-                        // can't use EndPosition for reverse slider cases.
-                        h.Position + path.Path.PositionAt(1)
-                    };
-                }
-
-                return new[] { h.Position };
-            }));
+            getSurroundingQuad(hitObjects.SelectMany(h => new[] { h.Position, h.EndPosition }));
 
         /// <summary>
         /// Returns a gamefield-space quad surrounding the provided points.

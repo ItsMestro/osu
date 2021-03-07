@@ -5,7 +5,7 @@ using osu.Game.Rulesets.Mods;
 
 namespace osu.Game.Rulesets.Mania.Mods
 {
-    public class ManiaModEasy : ModEasyWithExtraLives
+    public class ManiaModEasy : ModEasy
     {
         public override string Description => @"More forgiving HP drain, less accuracy required, and three lives!";
     }

@@ -24,11 +24,15 @@ namespace osu.Game.Tournament.Models
         /// Name of the file containing the flag.
         /// </summary>
         public Bindable<string> FlagName = new Bindable<string>(string.Empty);
+        public Bindable<string> FlagName2 = new Bindable<string>(string.Empty);
 
         /// <summary>
         /// Short acronym which appears in the group boxes post-selection.
         /// </summary>
         public Bindable<string> Acronym = new Bindable<string>(string.Empty);
+
+        public Bindable<string> PlayerOne = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerTwo = new Bindable<string>(string.Empty);
 
         public BindableList<SeedingResult> SeedingResults = new BindableList<SeedingResult>();
 
@@ -36,7 +40,7 @@ namespace osu.Game.Tournament.Models
         {
             get
             {
-                var ranks = Players.Select(p => p.Statistics?.GlobalRank)
+                var ranks = Players.Select(p => p.Statistics?.Ranks.Global)
                                    .Where(i => i.HasValue)
                                    .Select(i => i.Value)
                                    .ToArray();

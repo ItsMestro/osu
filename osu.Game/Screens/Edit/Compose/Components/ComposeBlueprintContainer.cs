@@ -27,16 +27,23 @@ namespace osu.Game.Screens.Edit.Compose.Components
     /// </summary>
     public class ComposeBlueprintContainer : BlueprintContainer
     {
-        public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
+        [Resolved]
+        private HitObjectComposer composer { get; set; }
+
+        private PlacementBlueprint currentPlacement;
 
         private readonly Container<PlacementBlueprint> placementBlueprintContainer;
 
-        private PlacementBlueprint currentPlacement;
+        public override bool ReceivePositionalInputAt(Vector2 screenSpacePos) => true;
+
         private InputManager inputManager;
 
-        public ComposeBlueprintContainer(HitObjectComposer composer)
-            : base(composer)
+        private readonly IEnumerable<DrawableHitObject> drawableHitObjects;
+
+        public ComposeBlueprintContainer(IEnumerable<DrawableHitObject> drawableHitObjects)
         {
+            this.drawableHitObjects = drawableHitObjects;
+
             placementBlueprintContainer = new Container<PlacementBlueprint>
             {
                 RelativeSizeAxes = Axes.Both
@@ -101,7 +108,7 @@ namespace osu.Game.Screens.Edit.Compose.Components
 
                 case TernaryState.True:
                     if (existingSample == null)
-                        samples.Add(new HitSampleInfo(sampleName));
+                        samples.Add(new HitSampleInfo { Name = sampleName });
                     break;
             }
         }
@@ -155,12 +162,9 @@ namespace osu.Game.Screens.Edit.Compose.Components
 
         private void updatePlacementPosition()
         {
-            var snapResult = Composer.SnapScreenSpacePositionToValidTime(inputManager.CurrentState.Mouse.Position);
+            var snapResult = composer.SnapScreenSpacePositionToValidTime(inputManager.CurrentState.Mouse.Position);
 
-            // if no time was found from positional snapping, we should still quantize to the beat.
-            snapResult.Time ??= Beatmap.SnapTime(EditorClock.CurrentTime, null);
-
-            currentPlacement.UpdateTimeAndPosition(snapResult);
+            currentPlacement.UpdatePosition(snapResult);
         }
 
         #endregion
@@ -169,7 +173,7 @@ namespace osu.Game.Screens.Edit.Compose.Components
         {
             base.Update();
 
-            if (Composer.CursorInPlacementArea)
+            if (composer.CursorInPlacementArea)
                 createPlacement();
             else if (currentPlacement?.PlacementActive == false)
                 removePlacement();
@@ -182,7 +186,7 @@ namespace osu.Game.Screens.Edit.Compose.Components
 
         protected sealed override SelectionBlueprint CreateBlueprintFor(HitObject hitObject)
         {
-            var drawable = Composer.HitObjects.FirstOrDefault(d => d.HitObject == hitObject);
+            var drawable = drawableHitObjects.FirstOrDefault(d => d.HitObject == hitObject);
 
             if (drawable == null)
                 return null;
@@ -192,11 +196,11 @@ namespace osu.Game.Screens.Edit.Compose.Components
 
         public virtual OverlaySelectionBlueprint CreateBlueprintFor(DrawableHitObject hitObject) => null;
 
-        protected override void OnBlueprintAdded(HitObject hitObject)
+        protected override void AddBlueprintFor(HitObject hitObject)
         {
-            base.OnBlueprintAdded(hitObject);
-
             refreshTool();
+
+            base.AddBlueprintFor(hitObject);
 
             // on successful placement, the new combo button should be reset as this is the most common user interaction.
             if (Beatmap.SelectedHitObjects.Count == 0)
@@ -211,6 +215,9 @@ namespace osu.Game.Screens.Edit.Compose.Components
 
             if (blueprint != null)
             {
+                // doing this post-creations as adding the default hit sample should be the case regardless of the ruleset.
+                blueprint.HitObject.Samples.Add(new HitSampleInfo { Name = HitSampleInfo.HIT_NORMAL });
+
                 placementBlueprintContainer.Child = currentPlacement = blueprint;
 
                 // Fixes a 1-frame position discrepancy due to the first mouse move event happening in the next frame

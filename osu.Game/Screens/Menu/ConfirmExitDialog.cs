@@ -9,15 +9,10 @@ namespace osu.Game.Screens.Menu
 {
     public class ConfirmExitDialog : PopupDialog
     {
-        /// <summary>
-        /// Construct a new exit confirmation dialog.
-        /// </summary>
-        /// <param name="onConfirm">An action to perform on confirmation.</param>
-        /// <param name="onCancel">An optional action to perform on cancel.</param>
-        public ConfirmExitDialog(Action onConfirm, Action onCancel = null)
+        public ConfirmExitDialog(Action confirm, Action cancel)
         {
-            HeaderText = "Are you sure you want to exit osu!?";
-            BodyText = "Last chance to turn back";
+            HeaderText = "Are you sure you want to exit?";
+            BodyText = "Last chance to back out.";
 
             Icon = FontAwesome.Solid.ExclamationTriangle;
 
@@ -25,13 +20,13 @@ namespace osu.Game.Screens.Menu
             {
                 new PopupDialogOkButton
                 {
-                    Text = @"Let me out!",
-                    Action = onConfirm
+                    Text = @"Goodbye",
+                    Action = confirm
                 },
                 new PopupDialogCancelButton
                 {
-                    Text = @"Just a little more...",
-                    Action = onCancel
+                    Text = @"Just a little more",
+                    Action = cancel
                 },
             };
         }

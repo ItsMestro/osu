@@ -16,11 +16,9 @@ using osu.Framework.Audio.Track;
 using osu.Framework.Bindables;
 using osu.Framework.Extensions;
 using osu.Framework.Graphics.Textures;
-using osu.Framework.IO.Stores;
 using osu.Framework.Lists;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
-using osu.Framework.Statistics;
 using osu.Framework.Testing;
 using osu.Game.Beatmaps.Formats;
 using osu.Game.Database;
@@ -30,8 +28,8 @@ using osu.Game.Online.API;
 using osu.Game.Online.API.Requests;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Objects;
-using osu.Game.Skinning;
 using osu.Game.Users;
+using osu.Game.Skinning;
 using Decoder = osu.Game.Beatmaps.Formats.Decoder;
 
 namespace osu.Game.Beatmaps
@@ -40,7 +38,7 @@ namespace osu.Game.Beatmaps
     /// Handles the storage and retrieval of Beatmaps/WorkingBeatmaps.
     /// </summary>
     [ExcludeFromDynamicCompile]
-    public partial class BeatmapManager : DownloadableArchiveModelManager<BeatmapSetInfo, BeatmapSetFileInfo>, IDisposable, IBeatmapResourceProvider
+    public partial class BeatmapManager : DownloadableArchiveModelManager<BeatmapSetInfo, BeatmapSetFileInfo>, IDisposable
     {
         /// <summary>
         /// Fired when a single difficulty has been hidden.
@@ -65,18 +63,13 @@ namespace osu.Game.Beatmaps
 
         protected override string[] HashableFileTypes => new[] { ".osu" };
 
-        protected override string ImportFromStablePath => ".";
-
-        protected override Storage PrepareStableStorage(StableStorage stableStorage) => stableStorage.GetSongStorage();
+        protected override string ImportFromStablePath => "Songs";
 
         private readonly RulesetStore rulesets;
         private readonly BeatmapStore beatmaps;
         private readonly AudioManager audioManager;
-        private readonly LargeTextureStore largeTextureStore;
+        private readonly TextureStore textureStore;
         private readonly ITrackStore trackStore;
-
-        [CanBeNull]
-        private readonly GameHost host;
 
         [CanBeNull]
         private readonly BeatmapOnlineLookupQueue onlineLookupQueue;
@@ -87,7 +80,6 @@ namespace osu.Game.Beatmaps
         {
             this.rulesets = rulesets;
             this.audioManager = audioManager;
-            this.host = host;
 
             DefaultBeatmap = defaultBeatmap;
 
@@ -100,7 +92,7 @@ namespace osu.Game.Beatmaps
             if (performOnlineLookups)
                 onlineLookupQueue = new BeatmapOnlineLookupQueue(api, storage);
 
-            largeTextureStore = new LargeTextureStore(host?.CreateTextureLoaderStore(Files.Store));
+            textureStore = new LargeTextureStore(host?.CreateTextureLoaderStore(Files.Store));
             trackStore = audioManager.GetTrackStore(Files.Store);
         }
 
@@ -310,10 +302,7 @@ namespace osu.Game.Beatmaps
 
                 beatmapInfo.Metadata ??= beatmapInfo.BeatmapSet.Metadata;
 
-                workingCache.Add(working = new BeatmapManagerWorkingBeatmap(beatmapInfo, this));
-
-                // best effort; may be higher than expected.
-                GlobalStatistics.Get<int>(nameof(Beatmaps), $"Cached {nameof(WorkingBeatmap)}s").Value = workingCache.Count();
+                workingCache.Add(working = new BeatmapManagerWorkingBeatmap(Files.Store, textureStore, trackStore, beatmapInfo, audioManager));
 
                 return working;
             }
@@ -457,7 +446,7 @@ namespace osu.Game.Beatmaps
                     // TODO: this should be done in a better place once we actually need to dynamically update it.
                     beatmap.BeatmapInfo.StarDifficulty = ruleset?.CreateInstance().CreateDifficultyCalculator(new DummyConversionBeatmap(beatmap)).Calculate().StarRating ?? 0;
                     beatmap.BeatmapInfo.Length = calculateLength(beatmap);
-                    beatmap.BeatmapInfo.BPM = 60000 / beatmap.GetMostCommonBeatLength();
+                    beatmap.BeatmapInfo.BPM = beatmap.ControlPointInfo.BPMMode;
 
                     beatmapInfos.Add(beatmap.BeatmapInfo);
                 }
@@ -502,16 +491,6 @@ namespace osu.Game.Beatmaps
         {
             onlineLookupQueue?.Dispose();
         }
-
-        #region IResourceStorageProvider
-
-        TextureStore IBeatmapResourceProvider.LargeTextureStore => largeTextureStore;
-        ITrackStore IBeatmapResourceProvider.Tracks => trackStore;
-        AudioManager IStorageResourceProvider.AudioManager => audioManager;
-        IResourceStore<byte[]> IStorageResourceProvider.Files => Files.Store;
-        IResourceStore<TextureUpload> IStorageResourceProvider.CreateTextureLoaderStore(IResourceStore<byte[]> underlyingStore) => host?.CreateTextureLoaderStore(underlyingStore);
-
-        #endregion
 
         /// <summary>
         /// A dummy WorkingBeatmap for the purpose of retrieving a beatmap for star difficulty calculation.

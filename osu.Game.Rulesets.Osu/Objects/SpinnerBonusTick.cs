@@ -11,7 +11,7 @@ namespace osu.Game.Rulesets.Osu.Objects
     {
         public SpinnerBonusTick()
         {
-            Samples.Add(new HitSampleInfo("spinnerbonus"));
+            Samples.Add(new HitSampleInfo { Name = "spinnerbonus" });
         }
 
         public override Judgement CreateJudgement() => new OsuSpinnerBonusTickJudgement();

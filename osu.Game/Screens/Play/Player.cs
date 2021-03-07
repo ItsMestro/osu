@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
 using osu.Framework.Audio.Sample;
@@ -26,7 +24,6 @@ using osu.Game.Overlays;
 using osu.Game.Replays;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Mods;
-using osu.Game.Rulesets.Replays;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.UI;
 using osu.Game.Scoring;
@@ -58,8 +55,6 @@ namespace osu.Game.Screens.Play
 
         // We are managing our own adjustments (see OnEntering/OnExiting).
         public override bool AllowRateAdjustments => false;
-
-        private readonly IBindable<bool> gameActive = new Bindable<bool>(true);
 
         private readonly Bindable<bool> samplePlaybackDisabled = new Bindable<bool>();
 
@@ -93,7 +88,7 @@ namespace osu.Game.Screens.Play
         [Resolved]
         private MusicController musicController { get; set; }
 
-        private Sample sampleRestart;
+        private SampleChannel sampleRestart;
 
         public BreakOverlay BreakOverlay;
 
@@ -130,14 +125,18 @@ namespace osu.Game.Screens.Play
         /// </summary>
         protected virtual bool CheckModsAllowFailure() => Mods.Value.OfType<IApplicableFailOverride>().All(m => m.PerformFail());
 
-        public readonly PlayerConfiguration Configuration;
+        private readonly bool allowPause;
+        private readonly bool showResults;
 
         /// <summary>
         /// Create a new player instance.
         /// </summary>
-        public Player(PlayerConfiguration configuration = null)
+        /// <param name="allowPause">Whether pausing should be allowed. If not allowed, attempting to pause will quit.</param>
+        /// <param name="showResults">Whether results screen should be pushed on completion.</param>
+        public Player(bool allowPause = true, bool showResults = true)
         {
-            Configuration = configuration ?? new PlayerConfiguration();
+            this.allowPause = allowPause;
+            this.showResults = showResults;
         }
 
         private GameplayBeatmap gameplayBeatmap;
@@ -156,25 +155,20 @@ namespace osu.Game.Screens.Play
             // replays should never be recorded or played back when autoplay is enabled
             if (!Mods.Value.Any(m => m is ModAutoplay))
                 PrepareReplay();
-
-            gameActive.BindValueChanged(_ => updatePauseOnFocusLostState(), true);
         }
 
-        [CanBeNull]
-        private Score recordingScore;
+        private Replay recordingReplay;
 
         /// <summary>
         /// Run any recording / playback setup for replays.
         /// </summary>
         protected virtual void PrepareReplay()
         {
-            DrawableRuleset.SetRecordTarget(recordingScore = new Score());
-
-            ScoreProcessor.NewJudgement += result => ScoreProcessor.PopulateScore(recordingScore.ScoreInfo);
+            DrawableRuleset.SetRecordTarget(recordingReplay = new Replay());
         }
 
         [BackgroundDependencyLoader(true)]
-        private void load(AudioManager audio, OsuConfigManager config, OsuGameBase game)
+        private void load(AudioManager audio, OsuConfigManager config, OsuGame game)
         {
             Mods.Value = base.Mods.Value.Select(m => m.CreateCopy()).ToArray();
 
@@ -191,10 +185,7 @@ namespace osu.Game.Screens.Play
             mouseWheelDisabled = config.GetBindable<bool>(OsuSetting.MouseDisableWheel);
 
             if (game != null)
-                gameActive.BindTo(game.IsActive);
-
-            if (game is OsuGame osuGame)
-                LocalUserPlaying.BindTo(osuGame.LocalUserPlaying);
+                LocalUserPlaying.BindTo(game.LocalUserPlaying);
 
             DrawableRuleset = ruleset.CreateDrawableRulesetWith(playableBeatmap, Mods.Value);
 
@@ -265,17 +256,19 @@ namespace osu.Game.Screens.Play
 
             DrawableRuleset.HasReplayLoaded.BindValueChanged(_ => updateGameplayState());
 
+            DrawableRuleset.HasReplayLoaded.BindValueChanged(_ => updatePauseOnFocusLostState(), true);
+
             // bind clock into components that require it
             DrawableRuleset.IsPaused.BindTo(GameplayClockContainer.IsPaused);
 
-            DrawableRuleset.NewResult += r =>
+            DrawableRuleset.OnNewResult += r =>
             {
                 HealthProcessor.ApplyResult(r);
                 ScoreProcessor.ApplyResult(r);
                 gameplayBeatmap.ApplyResult(r);
             };
 
-            DrawableRuleset.RevertResult += r =>
+            DrawableRuleset.OnRevertResult += r =>
             {
                 HealthProcessor.RevertResult(r);
                 ScoreProcessor.RevertResult(r);
@@ -309,89 +302,64 @@ namespace osu.Game.Screens.Play
                     {
                         ScoreProcessor,
                         HealthProcessor,
-                        new ComboEffects(ScoreProcessor),
                         breakTracker = new BreakTracker(DrawableRuleset.GameplayStartTime, ScoreProcessor)
                         {
                             Breaks = working.Beatmap.Breaks
                         }
                     }),
+                new ComboEffects(ScoreProcessor)
             }
         };
 
-        private Drawable createOverlayComponents(WorkingBeatmap working)
+        private Drawable createOverlayComponents(WorkingBeatmap working) => new Container
         {
-            var container = new Container
+            RelativeSizeAxes = Axes.Both,
+            Children = new[]
             {
-                RelativeSizeAxes = Axes.Both,
-                Children = new[]
+                DimmableStoryboard.OverlayLayerContainer.CreateProxy(),
+                BreakOverlay = new BreakOverlay(working.Beatmap.BeatmapInfo.LetterboxInBreaks, ScoreProcessor)
                 {
-                    DimmableStoryboard.OverlayLayerContainer.CreateProxy(),
-                    BreakOverlay = new BreakOverlay(working.Beatmap.BeatmapInfo.LetterboxInBreaks, ScoreProcessor)
+                    Clock = DrawableRuleset.FrameStableClock,
+                    ProcessCustomClock = false,
+                    Breaks = working.Beatmap.Breaks
+                },
+                // display the cursor above some HUD elements.
+                DrawableRuleset.Cursor?.CreateProxy() ?? new Container(),
+                DrawableRuleset.ResumeOverlay?.CreateProxy() ?? new Container(),
+                HUDOverlay = new HUDOverlay(ScoreProcessor, HealthProcessor, DrawableRuleset, Mods.Value)
+                {
+                    HoldToQuit =
                     {
-                        Clock = DrawableRuleset.FrameStableClock,
-                        ProcessCustomClock = false,
-                        Breaks = working.Beatmap.Breaks
+                        Action = performUserRequestedExit,
+                        IsPaused = { BindTarget = GameplayClockContainer.IsPaused }
                     },
-                    // display the cursor above some HUD elements.
-                    DrawableRuleset.Cursor?.CreateProxy() ?? new Container(),
-                    DrawableRuleset.ResumeOverlay?.CreateProxy() ?? new Container(),
-                    HUDOverlay = new HUDOverlay(ScoreProcessor, HealthProcessor, DrawableRuleset, Mods.Value)
+                    PlayerSettingsOverlay = { PlaybackSettings = { UserPlaybackRate = { BindTarget = GameplayClockContainer.UserPlaybackRate } } },
+                    KeyCounter =
                     {
-                        HoldToQuit =
-                        {
-                            Action = () => PerformExit(true),
-                            IsPaused = { BindTarget = GameplayClockContainer.IsPaused }
-                        },
-                        PlayerSettingsOverlay = { PlaybackSettings = { UserPlaybackRate = { BindTarget = GameplayClockContainer.UserPlaybackRate } } },
-                        KeyCounter =
-                        {
-                            AlwaysVisible = { BindTarget = DrawableRuleset.HasReplayLoaded },
-                            IsCounting = false
-                        },
-                        RequestSeek = time =>
-                        {
-                            GameplayClockContainer.Seek(time);
-                            GameplayClockContainer.Start();
-                        },
-                        Anchor = Anchor.Centre,
-                        Origin = Anchor.Centre
+                        AlwaysVisible = { BindTarget = DrawableRuleset.HasReplayLoaded },
+                        IsCounting = false
                     },
-                    skipOverlay = new SkipOverlay(DrawableRuleset.GameplayStartTime)
-                    {
-                        RequestSkip = performUserRequestedSkip
-                    },
-                    FailOverlay = new FailOverlay
-                    {
-                        OnRetry = Restart,
-                        OnQuit = () => PerformExit(true),
-                    },
-                    PauseOverlay = new PauseOverlay
-                    {
-                        OnResume = Resume,
-                        Retries = RestartCount,
-                        OnRetry = Restart,
-                        OnQuit = () => PerformExit(true),
-                    },
-                    new HotkeyExitOverlay
-                    {
-                        Action = () =>
-                        {
-                            if (!this.IsCurrentScreen()) return;
-
-                            fadeOut(true);
-                            PerformExit(false);
-                        },
-                    },
-                    failAnimation = new FailAnimation(DrawableRuleset) { OnComplete = onFailComplete, },
-                }
-            };
-
-            if (!Configuration.AllowSkippingIntro)
-                skipOverlay.Expire();
-
-            if (Configuration.AllowRestart)
-            {
-                container.Add(new HotkeyRetryOverlay
+                    RequestSeek = GameplayClockContainer.Seek,
+                    Anchor = Anchor.Centre,
+                    Origin = Anchor.Centre
+                },
+                skipOverlay = new SkipOverlay(DrawableRuleset.GameplayStartTime)
+                {
+                    RequestSkip = GameplayClockContainer.Skip
+                },
+                FailOverlay = new FailOverlay
+                {
+                    OnRetry = Restart,
+                    OnQuit = performUserRequestedExit,
+                },
+                PauseOverlay = new PauseOverlay
+                {
+                    OnResume = Resume,
+                    Retries = RestartCount,
+                    OnRetry = Restart,
+                    OnQuit = performUserRequestedExit,
+                },
+                new HotkeyRetryOverlay
                 {
                     Action = () =>
                     {
@@ -400,11 +368,20 @@ namespace osu.Game.Screens.Play
                         fadeOut(true);
                         Restart();
                     },
-                });
-            }
+                },
+                new HotkeyExitOverlay
+                {
+                    Action = () =>
+                    {
+                        if (!this.IsCurrentScreen()) return;
 
-            return container;
-        }
+                        fadeOut(true);
+                        performImmediateExit();
+                    },
+                },
+                failAnimation = new FailAnimation(DrawableRuleset) { OnComplete = onFailComplete, },
+            }
+        };
 
         private void onBreakTimeChanged(ValueChangedEvent<bool> isBreakTime)
         {
@@ -425,21 +402,10 @@ namespace osu.Game.Screens.Play
             samplePlaybackDisabled.Value = DrawableRuleset.FrameStableClock.IsCatchingUp.Value || GameplayClockContainer.GameplayClock.IsPaused.Value;
         }
 
-        private void updatePauseOnFocusLostState()
-        {
-            if (!PauseOnFocusLost || !pausingSupportedByCurrentState || breakTracker.IsBreakTime.Value)
-                return;
-
-            if (gameActive.Value == false)
-            {
-                bool paused = Pause();
-
-                // if the initial pause could not be satisfied, the pause cooldown may be active.
-                // reschedule the pause attempt until it can be achieved.
-                if (!paused)
-                    Scheduler.AddOnce(updatePauseOnFocusLostState);
-            }
-        }
+        private void updatePauseOnFocusLostState() =>
+            HUDOverlay.HoldToQuit.PauseOnFocusLost = PauseOnFocusLost
+                                                     && !DrawableRuleset.HasReplayLoaded.Value
+                                                     && !breakTracker.IsBreakTime.Value;
 
         private IBeatmap loadPlayableBeatmap()
         {
@@ -482,61 +448,30 @@ namespace osu.Game.Screens.Play
             return playable;
         }
 
-        /// <summary>
-        /// Exits the <see cref="Player"/>.
-        /// </summary>
-        /// <param name="showDialogFirst">
-        /// Whether the pause or fail dialog should be shown before performing an exit.
-        /// If true and a dialog is not yet displayed, the exit will be blocked the the relevant dialog will display instead.
-        /// </param>
-        protected void PerformExit(bool showDialogFirst)
+        private void performImmediateExit()
         {
             // if a restart has been requested, cancel any pending completion (user has shown intent to restart).
             completionProgressDelegate?.Cancel();
 
-            // there is a chance that the exit was performed after the transition to results has started.
-            // we want to give the user what they want, so forcefully return to this screen (to proceed with the upwards exit process).
-            if (!this.IsCurrentScreen())
+            ValidForResume = false;
+
+            performUserRequestedExit();
+        }
+
+        private void performUserRequestedExit()
+        {
+            if (!this.IsCurrentScreen()) return;
+
+            if (ValidForResume && HasFailed && !FailOverlay.IsPresent)
             {
-                ValidForResume = false;
-                this.MakeCurrent();
+                failAnimation.FinishTransforms(true);
                 return;
             }
 
-            bool pauseOrFailDialogVisible =
-                PauseOverlay.State.Value == Visibility.Visible || FailOverlay.State.Value == Visibility.Visible;
-
-            if (showDialogFirst && !pauseOrFailDialogVisible)
-            {
-                // if the fail animation is currently in progress, accelerate it (it will show the pause dialog on completion).
-                if (ValidForResume && HasFailed)
-                {
-                    failAnimation.FinishTransforms(true);
-                    return;
-                }
-
-                // there's a chance the pausing is not supported in the current state, at which point immediate exit should be preferred.
-                if (pausingSupportedByCurrentState)
-                {
-                    // in the case a dialog needs to be shown, attempt to pause and show it.
-                    // this may fail (see internal checks in Pause()) but the fail cases are temporary, so don't fall through to Exit().
-                    Pause();
-                    return;
-                }
-            }
-
-            this.Exit();
-        }
-
-        private void performUserRequestedSkip()
-        {
-            // user requested skip
-            // disable sample playback to stop currently playing samples and perform skip
-            samplePlaybackDisabled.Value = true;
-            GameplayClockContainer.Skip();
-
-            // return samplePlaybackDisabled.Value to what is defined by the beatmap's current state
-            updateSampleDisabledState();
+            if (canPause)
+                Pause();
+            else
+                this.Exit();
         }
 
         /// <summary>
@@ -545,9 +480,6 @@ namespace osu.Game.Screens.Play
         /// </summary>
         public void Restart()
         {
-            if (!Configuration.AllowRestart)
-                return;
-
             // at the point of restarting the track should either already be paused or the volume should be zero.
             // stopping here is to ensure music doesn't become audible after exiting back to PlayerLoader.
             musicController.Stop();
@@ -555,11 +487,13 @@ namespace osu.Game.Screens.Play
             sampleRestart?.Play();
             RestartRequested?.Invoke();
 
-            PerformExit(false);
+            if (this.IsCurrentScreen())
+                performImmediateExit();
+            else
+                this.MakeCurrent();
         }
 
         private ScheduledDelegate completionProgressDelegate;
-        private Task<ScoreInfo> scoreSubmissionTask;
 
         private void updateCompletionState(ValueChangedEvent<bool> completionState)
         {
@@ -584,51 +518,34 @@ namespace osu.Game.Screens.Play
 
             ValidForResume = false;
 
-            if (!Configuration.ShowResults) return;
-
-            scoreSubmissionTask ??= Task.Run(async () =>
-            {
-                var score = CreateScore();
-
-                try
-                {
-                    await SubmitScore(score);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Score submission failed!");
-                }
-
-                try
-                {
-                    await ImportScore(score);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Score import failed!");
-                }
-
-                return score.ScoreInfo;
-            });
+            if (!showResults) return;
 
             using (BeginDelayedSequence(RESULTS_DISPLAY_DELAY))
-                scheduleCompletion();
+                completionProgressDelegate = Schedule(GotoRanking);
         }
 
-        private void scheduleCompletion() => completionProgressDelegate = Schedule(() =>
+        protected virtual ScoreInfo CreateScore()
         {
-            if (!scoreSubmissionTask.IsCompleted)
+            var score = new ScoreInfo
             {
-                scheduleCompletion();
-                return;
-            }
+                Beatmap = Beatmap.Value.BeatmapInfo,
+                Ruleset = rulesetInfo,
+                Mods = Mods.Value.ToArray(),
+            };
 
-            // screen may be in the exiting transition phase.
-            if (this.IsCurrentScreen())
-                this.Push(CreateResults(scoreSubmissionTask.Result));
-        });
+            if (DrawableRuleset.ReplayScore != null)
+                score.User = DrawableRuleset.ReplayScore.ScoreInfo?.User ?? new GuestUser();
+            else
+                score.User = api.LocalUser.Value;
+
+            ScoreProcessor.PopulateScore(score);
+
+            return score;
+        }
 
         protected override bool OnScroll(ScrollEvent e) => mouseWheelDisabled.Value && !GameplayClockContainer.IsPaused.Value;
+
+        protected virtual ResultsScreen CreateResults(ScoreInfo score) => new SoloResultsScreen(score);
 
         #region Fail Logic
 
@@ -681,21 +598,18 @@ namespace osu.Game.Screens.Play
 
         private double? lastPauseActionTime;
 
-        protected bool PauseCooldownActive =>
-            lastPauseActionTime.HasValue && GameplayClockContainer.GameplayClock.CurrentTime < lastPauseActionTime + pause_cooldown;
-
-        /// <summary>
-        /// A set of conditionals which defines whether the current game state and configuration allows for
-        /// pausing to be attempted via <see cref="Pause"/>. If false, the game should generally exit if a user pause
-        /// is attempted.
-        /// </summary>
-        private bool pausingSupportedByCurrentState =>
+        private bool canPause =>
             // must pass basic screen conditions (beatmap loaded, instance allows pause)
-            LoadedBeatmapSuccessfully && Configuration.AllowPause && ValidForResume
+            LoadedBeatmapSuccessfully && allowPause && ValidForResume
             // replays cannot be paused and exit immediately
             && !DrawableRuleset.HasReplayLoaded.Value
             // cannot pause if we are already in a fail state
-            && !HasFailed;
+            && !HasFailed
+            // cannot pause if already paused (or in a cooldown state) unless we are in a resuming state.
+            && (IsResuming || (GameplayClockContainer.IsPaused.Value == false && !pauseCooldownActive));
+
+        private bool pauseCooldownActive =>
+            lastPauseActionTime.HasValue && GameplayClockContainer.GameplayClock.CurrentTime < lastPauseActionTime + pause_cooldown;
 
         private bool canResume =>
             // cannot resume from a non-paused state
@@ -705,12 +619,9 @@ namespace osu.Game.Screens.Play
             // already resuming
             && !IsResuming;
 
-        public bool Pause()
+        public void Pause()
         {
-            if (!pausingSupportedByCurrentState) return false;
-
-            if (!IsResuming && PauseCooldownActive)
-                return false;
+            if (!canPause) return;
 
             if (IsResuming)
             {
@@ -721,7 +632,6 @@ namespace osu.Game.Screens.Play
             GameplayClockContainer.Stop();
             PauseOverlay.Show();
             lastPauseActionTime = GameplayClockContainer.GameplayClock.CurrentTime;
-            return true;
         }
 
         public void Resume()
@@ -762,23 +672,21 @@ namespace osu.Game.Screens.Play
                 .Delay(250)
                 .FadeIn(250);
 
-            ApplyToBackground(b =>
-            {
-                b.EnableUserDim.Value = true;
-                b.BlurAmount.Value = 0;
+            Background.EnableUserDim.Value = true;
+            Background.BlurAmount.Value = 0;
 
-                // bind component bindables.
-                b.IsBreakTime.BindTo(breakTracker.IsBreakTime);
-
-                b.StoryboardReplacesBackground.BindTo(storyboardReplacesBackground);
-            });
-
+            // bind component bindables.
+            Background.IsBreakTime.BindTo(breakTracker.IsBreakTime);
             HUDOverlay.IsBreakTime.BindTo(breakTracker.IsBreakTime);
             DimmableStoryboard.IsBreakTime.BindTo(breakTracker.IsBreakTime);
 
+            Background.StoryboardReplacesBackground.BindTo(storyboardReplacesBackground);
             DimmableStoryboard.StoryboardReplacesBackground.BindTo(storyboardReplacesBackground);
 
             storyboardReplacesBackground.Value = Beatmap.Value.Storyboard.ReplacesBackground && Beatmap.Value.Storyboard.HasDrawable;
+
+            GameplayClockContainer.Restart();
+            GameplayClockContainer.FadeInFromZero(750, Easing.OutQuint);
 
             foreach (var mod in Mods.Value.OfType<IApplicableToPlayer>())
                 mod.ApplyToPlayer(this);
@@ -794,21 +702,6 @@ namespace osu.Game.Screens.Play
                 mod.ApplyToTrack(musicController.CurrentTrack);
 
             updateGameplayState();
-
-            GameplayClockContainer.FadeInFromZero(750, Easing.OutQuint);
-            StartGameplay();
-        }
-
-        /// <summary>
-        /// Called to trigger the starting of the gameplay clock and underlying gameplay.
-        /// This will be called on entering the player screen once. A derived class may block the first call to this to delay the start of gameplay.
-        /// </summary>
-        protected virtual void StartGameplay()
-        {
-            if (GameplayClockContainer.GameplayClock.IsRunning)
-                throw new InvalidOperationException($"{nameof(StartGameplay)} should not be called when the gameplay clock is already running");
-
-            GameplayClockContainer.Restart();
         }
 
         public override void OnSuspending(IScreen next)
@@ -830,6 +723,14 @@ namespace osu.Game.Screens.Play
                 return true;
             }
 
+            // ValidForResume is false when restarting
+            if (ValidForResume)
+            {
+                if (pauseCooldownActive && !GameplayClockContainer.IsPaused.Value)
+                    // still want to block if we are within the cooldown period and not already paused.
+                    return true;
+            }
+
             // GameplayClockContainer performs seeks / start / stop operations on the beatmap's track.
             // as we are no longer the current screen, we cannot guarantee the track is still usable.
             GameplayClockContainer?.StopUsingBeatmapClock();
@@ -840,80 +741,45 @@ namespace osu.Game.Screens.Play
             return base.OnExiting(next);
         }
 
-        /// <summary>
-        /// Creates the player's <see cref="Score"/>.
-        /// </summary>
-        /// <returns>The <see cref="Score"/>.</returns>
-        protected virtual Score CreateScore()
+        protected virtual void GotoRanking()
         {
-            var score = new Score
+            if (DrawableRuleset.ReplayScore != null)
             {
-                ScoreInfo = new ScoreInfo
+                // if a replay is present, we likely don't want to import into the local database.
+                this.Push(CreateResults(CreateScore()));
+                return;
+            }
+
+            LegacyByteArrayReader replayReader = null;
+
+            var score = new Score { ScoreInfo = CreateScore() };
+
+            if (recordingReplay?.Frames.Count > 0)
+            {
+                score.Replay = recordingReplay;
+
+                using (var stream = new MemoryStream())
                 {
-                    Beatmap = Beatmap.Value.BeatmapInfo,
-                    Ruleset = rulesetInfo,
-                    Mods = Mods.Value.ToArray(),
+                    new LegacyScoreEncoder(score, gameplayBeatmap.PlayableBeatmap).Encode(stream);
+                    replayReader = new LegacyByteArrayReader(stream.ToArray(), "replay.osr");
                 }
-            };
-
-            if (DrawableRuleset.ReplayScore != null)
-            {
-                score.ScoreInfo.User = DrawableRuleset.ReplayScore.ScoreInfo?.User ?? new GuestUser();
-                score.Replay = DrawableRuleset.ReplayScore.Replay;
-            }
-            else
-            {
-                score.ScoreInfo.User = api.LocalUser.Value;
-                score.Replay = new Replay { Frames = recordingScore?.Replay.Frames.ToList() ?? new List<ReplayFrame>() };
             }
 
-            ScoreProcessor.PopulateScore(score.ScoreInfo);
-
-            return score;
+            scoreManager.Import(score.ScoreInfo, replayReader)
+                        .ContinueWith(imported => Schedule(() =>
+                        {
+                            // screen may be in the exiting transition phase.
+                            if (this.IsCurrentScreen())
+                                this.Push(CreateResults(imported.Result));
+                        }));
         }
-
-        /// <summary>
-        /// Imports the player's <see cref="Score"/> to the local database.
-        /// </summary>
-        /// <param name="score">The <see cref="Score"/> to import.</param>
-        /// <returns>The imported score.</returns>
-        protected virtual Task ImportScore(Score score)
-        {
-            // Replays are already populated and present in the game's database, so should not be re-imported.
-            if (DrawableRuleset.ReplayScore != null)
-                return Task.CompletedTask;
-
-            LegacyByteArrayReader replayReader;
-
-            using (var stream = new MemoryStream())
-            {
-                new LegacyScoreEncoder(score, gameplayBeatmap.PlayableBeatmap).Encode(stream);
-                replayReader = new LegacyByteArrayReader(stream.ToArray(), "replay.osr");
-            }
-
-            return scoreManager.Import(score.ScoreInfo, replayReader);
-        }
-
-        /// <summary>
-        /// Submits the player's <see cref="Score"/>.
-        /// </summary>
-        /// <param name="score">The <see cref="Score"/> to submit.</param>
-        /// <returns>The submitted score.</returns>
-        protected virtual Task SubmitScore(Score score) => Task.CompletedTask;
-
-        /// <summary>
-        /// Creates the <see cref="ResultsScreen"/> for a <see cref="ScoreInfo"/>.
-        /// </summary>
-        /// <param name="score">The <see cref="ScoreInfo"/> to be displayed in the results screen.</param>
-        /// <returns>The <see cref="ResultsScreen"/>.</returns>
-        protected virtual ResultsScreen CreateResults(ScoreInfo score) => new SoloResultsScreen(score, true);
 
         private void fadeOut(bool instant = false)
         {
             float fadeOutDuration = instant ? 0 : 250;
             this.FadeOut(fadeOutDuration);
 
-            ApplyToBackground(b => b.EnableUserDim.Value = false);
+            Background.EnableUserDim.Value = false;
             storyboardReplacesBackground.Value = false;
         }
 

@@ -15,7 +15,6 @@ using osu.Game.Overlays.Profile;
 using osu.Game.Overlays.Profile.Sections;
 using osu.Game.Users;
 using osuTK;
-using osuTK.Graphics;
 
 namespace osu.Game.Overlays
 {
@@ -30,13 +29,9 @@ namespace osu.Game.Overlays
         public const float CONTENT_X_MARGIN = 70;
 
         public UserProfileOverlay()
-            : base(OverlayColourScheme.Pink)
+            : base(OverlayColourScheme.Pink, new ProfileHeader())
         {
         }
-
-        protected override ProfileHeader CreateHeader() => new ProfileHeader();
-
-        protected override Color4 BackgroundColour => ColourProvider.Background6;
 
         public void ShowUser(int userId) => ShowUser(new User { Id = userId });
 
@@ -76,6 +71,12 @@ namespace osu.Game.Overlays
                 Anchor = Anchor.TopCentre,
                 Origin = Anchor.TopCentre,
             };
+
+            Add(new Box
+            {
+                RelativeSizeAxes = Axes.Both,
+                Colour = ColourProvider.Background6
+            });
 
             Add(sectionsContainer = new ProfileSectionsContainer
             {
@@ -201,7 +202,7 @@ namespace osu.Game.Overlays
                 RelativeSizeAxes = Axes.Both;
             }
 
-            protected override UserTrackingScrollContainer CreateScrollContainer() => new OverlayScrollContainer();
+            protected override OsuScrollContainer CreateScrollContainer() => new OverlayScrollContainer();
 
             protected override FlowContainer<ProfileSection> CreateScrollContentContainer() => new FillFlowContainer<ProfileSection>
             {

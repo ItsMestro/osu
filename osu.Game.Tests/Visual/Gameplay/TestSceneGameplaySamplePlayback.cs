@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
+using osu.Framework.Graphics.Audio;
 using osu.Framework.Testing;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Osu;
@@ -19,16 +20,14 @@ namespace osu.Game.Tests.Visual.Gameplay
         public void TestAllSamplesStopDuringSeek()
         {
             DrawableSlider slider = null;
-            PoolableSkinnableSample[] samples = null;
+            DrawableSample[] samples = null;
             ISamplePlaybackDisabler sampleDisabler = null;
 
-            AddUntilStep("get variables", () =>
+            AddStep("get variables", () =>
             {
                 sampleDisabler = Player;
-                slider = Player.ChildrenOfType<DrawableSlider>().OrderBy(s => s.HitObject.StartTime).FirstOrDefault();
-                samples = slider?.ChildrenOfType<PoolableSkinnableSample>().ToArray();
-
-                return slider != null;
+                slider = Player.ChildrenOfType<DrawableSlider>().OrderBy(s => s.HitObject.StartTime).First();
+                samples = slider.ChildrenOfType<DrawableSample>().ToArray();
             });
 
             AddUntilStep("wait for slider sliding then seek", () =>

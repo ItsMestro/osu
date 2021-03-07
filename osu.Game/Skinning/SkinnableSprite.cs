@@ -24,15 +24,7 @@ namespace osu.Game.Skinning
         {
         }
 
-        protected override Drawable CreateDefault(ISkinComponent component)
-        {
-            var texture = textures.Get(component.LookupName);
-
-            if (texture == null)
-                return null;
-
-            return new Sprite { Texture = texture };
-        }
+        protected override Drawable CreateDefault(ISkinComponent component) => new Sprite { Texture = textures.Get(component.LookupName) };
 
         private class SpriteComponent : ISkinComponent
         {

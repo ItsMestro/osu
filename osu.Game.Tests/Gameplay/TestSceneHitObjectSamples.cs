@@ -3,6 +3,7 @@
 
 using NUnit.Framework;
 using osu.Framework.IO.Stores;
+using osu.Framework.Testing;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Osu;
 using osu.Game.Tests.Beatmaps;
@@ -11,6 +12,7 @@ using static osu.Game.Skinning.LegacySkinConfiguration;
 
 namespace osu.Game.Tests.Gameplay
 {
+    [HeadlessTest]
     public class TestSceneHitObjectSamples : HitObjectSampleTest
     {
         protected override Ruleset CreatePlayerRuleset() => new OsuRuleset();

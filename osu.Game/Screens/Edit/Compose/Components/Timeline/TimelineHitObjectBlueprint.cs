@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Bindables;
@@ -13,14 +14,13 @@ using osu.Framework.Graphics.Effects;
 using osu.Framework.Graphics.Primitives;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Input.Events;
-using osu.Framework.Utils;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Sprites;
 using osu.Game.Graphics.UserInterface;
 using osu.Game.Rulesets.Edit;
 using osu.Game.Rulesets.Objects;
+using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Objects.Types;
-using osu.Game.Skinning;
 using osuTK;
 using osuTK.Graphics;
 
@@ -28,26 +28,32 @@ namespace osu.Game.Screens.Edit.Compose.Components.Timeline
 {
     public class TimelineHitObjectBlueprint : SelectionBlueprint
     {
-        private const float thickness = 5;
-        private const float shadow_radius = 5;
-        private const float circle_size = 34;
-
-        public Action<DragEvent> OnDragHandled;
+        private readonly Circle circle;
 
         [UsedImplicitly]
         private readonly Bindable<double> startTime;
 
-        private Bindable<int> indexInCurrentComboBindable;
-        private Bindable<int> comboIndexBindable;
+        public Action<DragEvent> OnDragHandled;
 
-        private readonly Circle circle;
         private readonly DragBar dragBar;
+
         private readonly List<Container> shadowComponents = new List<Container>();
+
+        private DrawableHitObject drawableHitObject;
+
+        private Bindable<Color4> comboColour;
+
         private readonly Container mainComponents;
+
         private readonly OsuSpriteText comboIndexText;
 
-        [Resolved]
-        private ISkinSource skin { get; set; }
+        private Bindable<int> comboIndex;
+
+        private const float thickness = 5;
+
+        private const float shadow_radius = 5;
+
+        private const float circle_size = 24;
 
         public TimelineHitObjectBlueprint(HitObject hitObject)
             : base(hitObject)
@@ -146,42 +152,46 @@ namespace osu.Game.Screens.Edit.Compose.Components.Timeline
             updateShadows();
         }
 
+        [BackgroundDependencyLoader(true)]
+        private void load(HitObjectComposer composer)
+        {
+            if (composer != null)
+            {
+                // best effort to get the drawable representation for grabbing colour and what not.
+                drawableHitObject = composer.HitObjects.FirstOrDefault(d => d.HitObject == HitObject);
+            }
+        }
+
         protected override void LoadComplete()
         {
             base.LoadComplete();
 
             if (HitObject is IHasComboInformation comboInfo)
             {
-                indexInCurrentComboBindable = comboInfo.IndexInCurrentComboBindable.GetBoundCopy();
-                indexInCurrentComboBindable.BindValueChanged(_ => updateComboIndex(), true);
-
-                comboIndexBindable = comboInfo.ComboIndexBindable.GetBoundCopy();
-                comboIndexBindable.BindValueChanged(_ => updateComboColour(), true);
-
-                skin.SourceChanged += updateComboColour;
+                comboIndex = comboInfo.IndexInCurrentComboBindable.GetBoundCopy();
+                comboIndex.BindValueChanged(combo =>
+                {
+                    comboIndexText.Text = (combo.NewValue + 1).ToString();
+                }, true);
             }
-        }
 
-        private void updateComboIndex() => comboIndexText.Text = (indexInCurrentComboBindable.Value + 1).ToString();
+            if (drawableHitObject != null)
+            {
+                comboColour = drawableHitObject.AccentColour.GetBoundCopy();
+                comboColour.BindValueChanged(colour =>
+                {
+                    if (HitObject is IHasDuration)
+                        mainComponents.Colour = ColourInfo.GradientHorizontal(drawableHitObject.AccentColour.Value, Color4.White);
+                    else
+                        mainComponents.Colour = drawableHitObject.AccentColour.Value;
 
-        private void updateComboColour()
-        {
-            if (!(HitObject is IHasComboInformation combo))
-                return;
+                    var col = mainComponents.Colour.TopLeft.Linear;
+                    float brightness = col.R + col.G + col.B;
 
-            var comboColours = skin.GetConfig<GlobalSkinColours, IReadOnlyList<Color4>>(GlobalSkinColours.ComboColours)?.Value ?? Array.Empty<Color4>();
-            var comboColour = combo.GetComboColour(comboColours);
-
-            if (HitObject is IHasDuration)
-                mainComponents.Colour = ColourInfo.GradientHorizontal(comboColour, Color4.White);
-            else
-                mainComponents.Colour = comboColour;
-
-            var col = mainComponents.Colour.TopLeft.Linear;
-            float brightness = col.R + col.G + col.B;
-
-            // decide the combo index colour based on brightness?
-            comboIndexText.Colour = brightness > 0.5f ? Color4.Black : Color4.White;
+                    // decide the combo index colour based on brightness?
+                    comboIndexText.Colour = brightness > 0.5f ? Color4.Black : Color4.White;
+                }, true);
+            }
         }
 
         protected override void Update()
@@ -388,7 +398,7 @@ namespace osu.Game.Screens.Edit.Compose.Components.Timeline
                         case IHasDuration endTimeHitObject:
                             var snappedTime = Math.Max(hitObject.StartTime, beatSnapProvider.SnapTime(time));
 
-                            if (endTimeHitObject.EndTime == snappedTime || Precision.AlmostEquals(snappedTime, hitObject.StartTime, beatmap.GetBeatLengthAtTime(snappedTime)))
+                            if (endTimeHitObject.EndTime == snappedTime)
                                 return;
 
                             endTimeHitObject.Duration = snappedTime - hitObject.StartTime;

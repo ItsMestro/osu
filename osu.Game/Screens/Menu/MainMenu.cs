@@ -9,23 +9,20 @@ using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Platform;
 using osu.Framework.Screens;
-using osu.Game.Beatmaps;
 using osu.Game.Configuration;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Containers;
 using osu.Game.IO;
 using osu.Game.Online.API;
 using osu.Game.Overlays;
-using osu.Game.Rulesets;
 using osu.Game.Screens.Backgrounds;
 using osu.Game.Screens.Edit;
-using osu.Game.Screens.OnlinePlay.Multiplayer;
-using osu.Game.Screens.OnlinePlay.Playlists;
+using osu.Game.Screens.Multi;
 using osu.Game.Screens.Select;
 
 namespace osu.Game.Screens.Menu
 {
-    public class MainMenu : OsuScreen, IHandlePresentBeatmap
+    public class MainMenu : OsuScreen
     {
         public const float FADE_IN_DURATION = 300;
 
@@ -106,9 +103,8 @@ namespace osu.Game.Screens.Menu
                                 Beatmap.SetDefault();
                                 this.Push(new Editor());
                             },
-                            OnSolo = loadSoloSongSelect,
-                            OnMultiplayer = () => this.Push(new Multiplayer()),
-                            OnPlaylists = () => this.Push(new Playlists()),
+                            OnSolo = onSolo,
+                            OnMulti = delegate { this.Push(new Multiplayer()); },
                             OnExit = confirmAndExit,
                         }
                     }
@@ -129,17 +125,18 @@ namespace osu.Game.Screens.Menu
                 {
                     case ButtonSystemState.Initial:
                     case ButtonSystemState.Exit:
-                        ApplyToBackground(b => b.FadeColour(Color4.White, 500, Easing.OutSine));
+                        Background.FadeColour(Color4.White, 500, Easing.OutSine);
                         break;
 
                     default:
-                        ApplyToBackground(b => b.FadeColour(OsuColour.Gray(0.8f), 500, Easing.OutSine));
+                        Background.FadeColour(OsuColour.Gray(0.8f), 500, Easing.OutSine);
                         break;
                 }
             };
 
             buttons.OnSettings = () => settings?.ToggleVisibility();
             buttons.OnBeatmapListing = () => beatmapListing?.ToggleVisibility();
+            buttons.OnChart = () => rankings?.ShowSpotlights();
 
             LoadComponentAsync(background = new BackgroundScreenDefault());
             preloadSongSelect();
@@ -162,7 +159,9 @@ namespace osu.Game.Screens.Menu
                 LoadComponentAsync(songSelect = new PlaySongSelect());
         }
 
-        private void loadSoloSongSelect() => this.Push(consumeSongSelect());
+        public void LoadToSolo() => Schedule(onSolo);
+
+        private void onSolo() => this.Push(consumeSongSelect());
 
         private Screen consumeSongSelect()
         {
@@ -179,15 +178,14 @@ namespace osu.Game.Screens.Menu
             base.OnEntering(last);
             buttons.FadeInFromZero(500);
 
+            var metadata = Beatmap.Value.Metadata;
+
             if (last is IntroScreen && musicController.TrackLoaded)
             {
-                var track = musicController.CurrentTrack;
-
-                // presume the track is the current beatmap's track. not sure how correct this assumption is but it has worked until now.
-                if (!track.IsRunning)
+                if (!musicController.CurrentTrack.IsRunning)
                 {
-                    Beatmap.Value.PrepareTrackForPreviewLooping();
-                    track.Restart();
+                    musicController.CurrentTrack.Seek(metadata.PreviewTime != -1 ? metadata.PreviewTime : 0.4f * musicController.CurrentTrack.Length);
+                    musicController.CurrentTrack.Start();
                 }
             }
 
@@ -257,7 +255,7 @@ namespace osu.Game.Screens.Menu
         {
             base.OnResuming(last);
 
-            ApplyToBackground(b => (b as BackgroundScreenDefault)?.Next());
+            (Background as BackgroundScreenDefault)?.Next();
 
             // we may have consumed our preloaded instance, so let's make another.
             preloadSongSelect();
@@ -288,14 +286,6 @@ namespace osu.Game.Screens.Menu
 
             this.FadeOut(3000);
             return base.OnExiting(next);
-        }
-
-        public void PresentBeatmap(WorkingBeatmap beatmap, RulesetInfo ruleset)
-        {
-            Beatmap.Value = beatmap;
-            Ruleset.Value = ruleset;
-
-            Schedule(loadSoloSongSelect);
         }
     }
 }

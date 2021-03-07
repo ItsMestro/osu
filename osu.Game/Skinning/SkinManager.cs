@@ -19,20 +19,16 @@ using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Stores;
 using osu.Framework.Platform;
 using osu.Framework.Testing;
-using osu.Framework.Utils;
 using osu.Game.Audio;
 using osu.Game.Database;
-using osu.Game.IO;
 using osu.Game.IO.Archives;
 
 namespace osu.Game.Skinning
 {
     [ExcludeFromDynamicCompile]
-    public class SkinManager : ArchiveModelManager<SkinInfo, SkinFileInfo>, ISkinSource, IStorageResourceProvider
+    public class SkinManager : ArchiveModelManager<SkinInfo, SkinFileInfo>, ISkinSource
     {
         private readonly AudioManager audio;
-
-        private readonly GameHost host;
 
         private readonly IResourceStore<byte[]> legacyDefaultResources;
 
@@ -45,13 +41,21 @@ namespace osu.Game.Skinning
 
         protected override string ImportFromStablePath => "Skins";
 
-        public SkinManager(Storage storage, DatabaseContextFactory contextFactory, GameHost host, AudioManager audio, IResourceStore<byte[]> legacyDefaultResources)
-            : base(storage, contextFactory, new SkinStore(contextFactory, storage), host)
+        public SkinManager(Storage storage, DatabaseContextFactory contextFactory, IIpcHost importHost, AudioManager audio, IResourceStore<byte[]> legacyDefaultResources)
+            : base(storage, contextFactory, new SkinStore(contextFactory, storage), importHost)
         {
             this.audio = audio;
-            this.host = host;
-
             this.legacyDefaultResources = legacyDefaultResources;
+
+            ItemRemoved.BindValueChanged(weakRemovedInfo =>
+            {
+                if (weakRemovedInfo.NewValue.TryGetTarget(out var removedInfo))
+                {
+                    // check the removed skin is not the current user choice. if it is, switch back to default.
+                    if (removedInfo.ID == CurrentSkinInfo.Value.ID)
+                        CurrentSkinInfo.Value = SkinInfo.Default;
+                }
+            });
 
             CurrentSkinInfo.ValueChanged += skin => CurrentSkin.Value = GetSkin(skin.NewValue);
             CurrentSkin.ValueChanged += skin =>
@@ -68,7 +72,7 @@ namespace osu.Game.Skinning
         /// <summary>
         /// Returns a list of all usable <see cref="SkinInfo"/>s. Includes the special default skin plus all skins from <see cref="GetAllUserSkins"/>.
         /// </summary>
-        /// <returns>A newly allocated list of available <see cref="SkinInfo"/>.</returns>
+        /// <returns>A list of available <see cref="SkinInfo"/>.</returns>
         public List<SkinInfo> GetAllUsableSkins()
         {
             var userSkins = GetAllUserSkins();
@@ -80,22 +84,8 @@ namespace osu.Game.Skinning
         /// <summary>
         /// Returns a list of all usable <see cref="SkinInfo"/>s that have been loaded by the user.
         /// </summary>
-        /// <returns>A newly allocated list of available <see cref="SkinInfo"/>.</returns>
+        /// <returns>A list of available <see cref="SkinInfo"/>.</returns>
         public List<SkinInfo> GetAllUserSkins() => ModelStore.ConsumableItems.Where(s => !s.DeletePending).ToList();
-
-        public void SelectRandomSkin()
-        {
-            // choose from only user skins, removing the current selection to ensure a new one is chosen.
-            var randomChoices = GetAllUsableSkins().Where(s => s.ID > 0 && s.ID != CurrentSkinInfo.Value.ID).ToArray();
-
-            if (randomChoices.Length == 0)
-            {
-                CurrentSkinInfo.Value = SkinInfo.Default;
-                return;
-            }
-
-            CurrentSkinInfo.Value = randomChoices.ElementAt(RNG.Next(0, randomChoices.Length));
-        }
 
         protected override SkinInfo CreateModel(ArchiveReader archive) => new SkinInfo { Name = archive.Name };
 
@@ -153,9 +143,9 @@ namespace osu.Game.Skinning
                 return new DefaultSkin();
 
             if (skinInfo == DefaultLegacySkin.Info)
-                return new DefaultLegacySkin(legacyDefaultResources, this);
+                return new DefaultLegacySkin(legacyDefaultResources, audio);
 
-            return new LegacySkin(skinInfo, this);
+            return new LegacySkin(skinInfo, Files.Store, audio);
         }
 
         /// <summary>
@@ -171,16 +161,8 @@ namespace osu.Game.Skinning
 
         public Texture GetTexture(string componentName, WrapMode wrapModeS, WrapMode wrapModeT) => CurrentSkin.Value.GetTexture(componentName, wrapModeS, wrapModeT);
 
-        public Sample GetSample(ISampleInfo sampleInfo) => CurrentSkin.Value.GetSample(sampleInfo);
+        public SampleChannel GetSample(ISampleInfo sampleInfo) => CurrentSkin.Value.GetSample(sampleInfo);
 
         public IBindable<TValue> GetConfig<TLookup, TValue>(TLookup lookup) => CurrentSkin.Value.GetConfig<TLookup, TValue>(lookup);
-
-        #region IResourceStorageProvider
-
-        AudioManager IStorageResourceProvider.AudioManager => audio;
-        IResourceStore<byte[]> IStorageResourceProvider.Files => Files.Store;
-        IResourceStore<TextureUpload> IStorageResourceProvider.CreateTextureLoaderStore(IResourceStore<byte[]> underlyingStore) => host.CreateTextureLoaderStore(underlyingStore);
-
-        #endregion
     }
 }

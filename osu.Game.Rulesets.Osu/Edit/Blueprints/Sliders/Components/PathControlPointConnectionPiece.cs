@@ -20,7 +20,7 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
 
         private readonly Path path;
         private readonly Slider slider;
-        public int ControlPointIndex { get; set; }
+        private readonly int controlPointIndex;
 
         private IBindable<Vector2> sliderPosition;
         private IBindable<int> pathVersion;
@@ -28,7 +28,7 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
         public PathControlPointConnectionPiece(Slider slider, int controlPointIndex)
         {
             this.slider = slider;
-            ControlPointIndex = controlPointIndex;
+            this.controlPointIndex = controlPointIndex;
 
             Origin = Anchor.Centre;
             AutoSizeAxes = Axes.Both;
@@ -64,7 +64,7 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
 
             path.ClearVertices();
 
-            int nextIndex = ControlPointIndex + 1;
+            int nextIndex = controlPointIndex + 1;
             if (nextIndex == 0 || nextIndex >= slider.Path.ControlPoints.Count)
                 return;
 

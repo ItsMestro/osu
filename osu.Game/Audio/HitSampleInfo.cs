@@ -1,12 +1,8 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-#nullable enable
-
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using osu.Game.Utils;
 
 namespace osu.Game.Audio
 {
@@ -14,7 +10,7 @@ namespace osu.Game.Audio
     /// Describes a gameplay hit sample.
     /// </summary>
     [Serializable]
-    public class HitSampleInfo : ISampleInfo, IEquatable<HitSampleInfo>
+    public class HitSampleInfo : ISampleInfo
     {
         public const string HIT_WHISTLE = @"hitwhistle";
         public const string HIT_FINISH = @"hitfinish";
@@ -27,37 +23,28 @@ namespace osu.Game.Audio
         public static IEnumerable<string> AllAdditions => new[] { HIT_WHISTLE, HIT_CLAP, HIT_FINISH };
 
         /// <summary>
-        /// The name of the sample to load.
-        /// </summary>
-        public readonly string Name;
-
-        /// <summary>
         /// The bank to load the sample from.
         /// </summary>
-        public readonly string? Bank;
+        public string Bank;
+
+        /// <summary>
+        /// The name of the sample to load.
+        /// </summary>
+        public string Name;
 
         /// <summary>
         /// An optional suffix to provide priority lookup. Falls back to non-suffixed <see cref="Name"/>.
         /// </summary>
-        public readonly string? Suffix;
+        public string Suffix;
 
         /// <summary>
         /// The sample volume.
         /// </summary>
-        public int Volume { get; }
-
-        public HitSampleInfo(string name, string? bank = null, string? suffix = null, int volume = 0)
-        {
-            Name = name;
-            Bank = bank;
-            Suffix = suffix;
-            Volume = volume;
-        }
+        public int Volume { get; set; }
 
         /// <summary>
         /// Retrieve all possible filenames that can be used as a source, returned in order of preference (highest first).
         /// </summary>
-        [JsonIgnore]
         public virtual IEnumerable<string> LookupNames
         {
             get
@@ -69,23 +56,6 @@ namespace osu.Game.Audio
             }
         }
 
-        /// <summary>
-        /// Creates a new <see cref="HitSampleInfo"/> with overridden values.
-        /// </summary>
-        /// <param name="newName">An optional new sample name.</param>
-        /// <param name="newBank">An optional new sample bank.</param>
-        /// <param name="newSuffix">An optional new lookup suffix.</param>
-        /// <param name="newVolume">An optional new volume.</param>
-        /// <returns>The new <see cref="HitSampleInfo"/>.</returns>
-        public virtual HitSampleInfo With(Optional<string> newName = default, Optional<string?> newBank = default, Optional<string?> newSuffix = default, Optional<int> newVolume = default)
-            => new HitSampleInfo(newName.GetOr(Name), newBank.GetOr(Bank), newSuffix.GetOr(Suffix), newVolume.GetOr(Volume));
-
-        public bool Equals(HitSampleInfo? other)
-            => other != null && Name == other.Name && Bank == other.Bank && Suffix == other.Suffix;
-
-        public override bool Equals(object? obj)
-            => obj is HitSampleInfo other && Equals(other);
-
-        public override int GetHashCode() => HashCode.Combine(Name, Bank, Suffix);
+        public HitSampleInfo Clone() => (HitSampleInfo)MemberwiseClone();
     }
 }

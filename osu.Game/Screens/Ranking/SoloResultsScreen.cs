@@ -15,12 +15,10 @@ namespace osu.Game.Screens.Ranking
 {
     public class SoloResultsScreen : ResultsScreen
     {
-        private GetScoresRequest getScoreRequest;
-
         [Resolved]
         private RulesetStore rulesets { get; set; }
 
-        public SoloResultsScreen(ScoreInfo score, bool allowRetry)
+        public SoloResultsScreen(ScoreInfo score, bool allowRetry = true)
             : base(score, allowRetry)
         {
         }
@@ -30,16 +28,9 @@ namespace osu.Game.Screens.Ranking
             if (Score.Beatmap.OnlineBeatmapID == null || Score.Beatmap.Status <= BeatmapSetOnlineStatus.Pending)
                 return null;
 
-            getScoreRequest = new GetScoresRequest(Score.Beatmap, Score.Ruleset);
-            getScoreRequest.Success += r => scoresCallback?.Invoke(r.Scores.Where(s => s.OnlineScoreID != Score.OnlineScoreID).Select(s => s.CreateScoreInfo(rulesets)));
-            return getScoreRequest;
-        }
-
-        protected override void Dispose(bool isDisposing)
-        {
-            base.Dispose(isDisposing);
-
-            getScoreRequest?.Cancel();
+            var req = new GetScoresRequest(Score.Beatmap, Score.Ruleset);
+            req.Success += r => scoresCallback?.Invoke(r.Scores.Where(s => s.OnlineScoreID != Score.OnlineScoreID).Select(s => s.CreateScoreInfo(rulesets)));
+            return req;
         }
     }
 }

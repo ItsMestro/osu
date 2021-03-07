@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
 using osu.Framework.Audio.Sample;
@@ -20,16 +19,16 @@ using osu.Game.Graphics.Containers;
 using osu.Game.Graphics.Sprites;
 using osu.Game.Graphics.UserInterface;
 using osu.Game.Input.Bindings;
+using osu.Game.Overlays.Mods.Sections;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Screens;
-using osu.Game.Utils;
 using osuTK;
 using osuTK.Graphics;
 using osuTK.Input;
 
 namespace osu.Game.Overlays.Mods
 {
-    public abstract class ModSelectOverlay : WaveOverlayContainer
+    public class ModSelectOverlay : WaveOverlayContainer
     {
         public const float HEIGHT = 510;
 
@@ -37,41 +36,11 @@ namespace osu.Game.Overlays.Mods
         protected readonly TriangleButton CustomiseButton;
         protected readonly TriangleButton CloseButton;
 
-        protected readonly Drawable MultiplierSection;
         protected readonly OsuSpriteText MultiplierLabel;
-
-        protected readonly FillFlowContainer FooterContainer;
 
         protected override bool BlockNonPositionalInput => false;
 
         protected override bool DimMainContent => false;
-
-        /// <summary>
-        /// Whether <see cref="Mod"/>s underneath the same <see cref="MultiMod"/> instance should appear as stacked buttons.
-        /// </summary>
-        protected virtual bool Stacked => true;
-
-        /// <summary>
-        /// Whether configurable <see cref="Mod"/>s can be configured by the local user.
-        /// </summary>
-        protected virtual bool AllowConfiguration => true;
-
-        [NotNull]
-        private Func<Mod, bool> isValidMod = m => true;
-
-        /// <summary>
-        /// A function that checks whether a given mod is selectable.
-        /// </summary>
-        [NotNull]
-        public Func<Mod, bool> IsValidMod
-        {
-            get => isValidMod;
-            set
-            {
-                isValidMod = value ?? throw new ArgumentNullException(nameof(value));
-                updateAvailableMods();
-            }
-        }
 
         protected readonly FillFlowContainer<ModSection> ModSectionsContainer;
 
@@ -87,9 +56,11 @@ namespace osu.Game.Overlays.Mods
         private const float content_width = 0.8f;
         private const float footer_button_spacing = 20;
 
-        private Sample sampleOn, sampleOff;
+        private readonly FillFlowContainer footerContainer;
 
-        protected ModSelectOverlay()
+        private SampleChannel sampleOn, sampleOff;
+
+        public ModSelectOverlay()
         {
             Waves.FirstWaveColour = Color4Extensions.FromHex(@"19b0e2");
             Waves.SecondWaveColour = Color4Extensions.FromHex(@"2280a2");
@@ -187,82 +158,44 @@ namespace osu.Game.Overlays.Mods
                         },
                         new Drawable[]
                         {
-                            new Container
+                            // Body
+                            new OsuScrollContainer
                             {
+                                ScrollbarVisible = false,
+                                Origin = Anchor.TopCentre,
+                                Anchor = Anchor.TopCentre,
                                 RelativeSizeAxes = Axes.Both,
-                                Children = new Drawable[]
+                                Padding = new MarginPadding
                                 {
-                                    // Body
-                                    new OsuScrollContainer
+                                    Vertical = 10,
+                                    Horizontal = OsuScreen.HORIZONTAL_OVERFLOW_PADDING
+                                },
+                                Child = ModSectionsContainer = new FillFlowContainer<ModSection>
+                                {
+                                    Origin = Anchor.TopCentre,
+                                    Anchor = Anchor.TopCentre,
+                                    RelativeSizeAxes = Axes.X,
+                                    AutoSizeAxes = Axes.Y,
+                                    Spacing = new Vector2(0f, 10f),
+                                    Width = content_width,
+                                    LayoutDuration = 200,
+                                    LayoutEasing = Easing.OutQuint,
+                                    Children = new ModSection[]
                                     {
-                                        ScrollbarVisible = false,
-                                        Origin = Anchor.TopCentre,
-                                        Anchor = Anchor.TopCentre,
-                                        RelativeSizeAxes = Axes.Both,
-                                        Padding = new MarginPadding
-                                        {
-                                            Vertical = 10,
-                                            Horizontal = OsuScreen.HORIZONTAL_OVERFLOW_PADDING
-                                        },
-                                        Children = new Drawable[]
-                                        {
-                                            ModSectionsContainer = new FillFlowContainer<ModSection>
-                                            {
-                                                Origin = Anchor.TopCentre,
-                                                Anchor = Anchor.TopCentre,
-                                                RelativeSizeAxes = Axes.X,
-                                                AutoSizeAxes = Axes.Y,
-                                                Spacing = new Vector2(0f, 10f),
-                                                Width = content_width,
-                                                LayoutDuration = 200,
-                                                LayoutEasing = Easing.OutQuint,
-                                                Children = new[]
-                                                {
-                                                    CreateModSection(ModType.DifficultyReduction).With(s =>
-                                                    {
-                                                        s.ToggleKeys = new[] { Key.Q, Key.W, Key.E, Key.R, Key.T, Key.Y, Key.U, Key.I, Key.O, Key.P };
-                                                        s.Action = modButtonPressed;
-                                                    }),
-                                                    CreateModSection(ModType.DifficultyIncrease).With(s =>
-                                                    {
-                                                        s.ToggleKeys = new[] { Key.A, Key.S, Key.D, Key.F, Key.G, Key.H, Key.J, Key.K, Key.L };
-                                                        s.Action = modButtonPressed;
-                                                    }),
-                                                    CreateModSection(ModType.Automation).With(s =>
-                                                    {
-                                                        s.ToggleKeys = new[] { Key.Z, Key.X, Key.C, Key.V, Key.B, Key.N, Key.M };
-                                                        s.Action = modButtonPressed;
-                                                    }),
-                                                    CreateModSection(ModType.Conversion).With(s =>
-                                                    {
-                                                        s.Action = modButtonPressed;
-                                                    }),
-                                                    CreateModSection(ModType.Fun).With(s =>
-                                                    {
-                                                        s.Action = modButtonPressed;
-                                                    }),
-                                                }
-                                            },
-                                        }
-                                    },
-                                    ModSettingsContainer = new ModSettingsContainer
-                                    {
-                                        RelativeSizeAxes = Axes.Both,
-                                        Anchor = Anchor.BottomRight,
-                                        Origin = Anchor.BottomRight,
-                                        Width = 0.3f,
-                                        Alpha = 0,
-                                        Padding = new MarginPadding(30),
-                                        SelectedMods = { BindTarget = SelectedMods },
-                                    },
-                                }
+                                        new DifficultyReductionSection { Action = modButtonPressed },
+                                        new DifficultyIncreaseSection { Action = modButtonPressed },
+                                        new AutomationSection { Action = modButtonPressed },
+                                        new ConversionSection { Action = modButtonPressed },
+                                        new FunSection { Action = modButtonPressed },
+                                    }
+                                },
                             },
                         },
                         new Drawable[]
                         {
+                            // Footer
                             new Container
                             {
-                                Name = "Footer content",
                                 RelativeSizeAxes = Axes.X,
                                 AutoSizeAxes = Axes.Y,
                                 Origin = Anchor.TopCentre,
@@ -275,27 +208,28 @@ namespace osu.Game.Overlays.Mods
                                         Colour = new Color4(172, 20, 116, 255),
                                         Alpha = 0.5f,
                                     },
-                                    FooterContainer = new FillFlowContainer
+                                    footerContainer = new FillFlowContainer
                                     {
                                         Origin = Anchor.BottomCentre,
                                         Anchor = Anchor.BottomCentre,
                                         AutoSizeAxes = Axes.Y,
                                         RelativeSizeAxes = Axes.X,
-                                        RelativePositionAxes = Axes.X,
                                         Width = content_width,
                                         Spacing = new Vector2(footer_button_spacing, footer_button_spacing / 2),
+                                        LayoutDuration = 100,
+                                        LayoutEasing = Easing.OutQuint,
                                         Padding = new MarginPadding
                                         {
                                             Vertical = 15,
                                             Horizontal = OsuScreen.HORIZONTAL_OVERFLOW_PADDING
                                         },
-                                        Children = new[]
+                                        Children = new Drawable[]
                                         {
                                             DeselectAllButton = new TriangleButton
                                             {
                                                 Width = 180,
                                                 Text = "Deselect All",
-                                                Action = deselectAll,
+                                                Action = DeselectAll,
                                                 Origin = Anchor.CentreLeft,
                                                 Anchor = Anchor.CentreLeft,
                                             },
@@ -303,9 +237,8 @@ namespace osu.Game.Overlays.Mods
                                             {
                                                 Width = 180,
                                                 Text = "Customisation",
-                                                Action = () => ModSettingsContainer.ToggleVisibility(),
+                                                Action = () => ModSettingsContainer.Alpha = ModSettingsContainer.Alpha == 1 ? 0 : 1,
                                                 Enabled = { Value = false },
-                                                Alpha = AllowConfiguration ? 1 : 0,
                                                 Origin = Anchor.CentreLeft,
                                                 Anchor = Anchor.CentreLeft,
                                             },
@@ -317,7 +250,7 @@ namespace osu.Game.Overlays.Mods
                                                 Origin = Anchor.CentreLeft,
                                                 Anchor = Anchor.CentreLeft,
                                             },
-                                            MultiplierSection = new FillFlowContainer
+                                            new FillFlowContainer
                                             {
                                                 AutoSizeAxes = Axes.Both,
                                                 Spacing = new Vector2(footer_button_spacing / 2, 0),
@@ -348,6 +281,16 @@ namespace osu.Game.Overlays.Mods
                         },
                     },
                 },
+                ModSettingsContainer = new ModSettingsContainer
+                {
+                    RelativeSizeAxes = Axes.Both,
+                    Anchor = Anchor.BottomRight,
+                    Origin = Anchor.BottomRight,
+                    Width = 0.25f,
+                    Alpha = 0,
+                    X = -100,
+                    SelectedMods = { BindTarget = SelectedMods },
+                }
             };
 
             ((IBindable<bool>)CustomiseButton.Enabled).BindTo(ModSettingsContainer.HasSettingsForSelection);
@@ -365,7 +308,7 @@ namespace osu.Game.Overlays.Mods
             sampleOff = audio.Samples.Get(@"UI/check-off");
         }
 
-        private void deselectAll()
+        public void DeselectAll()
         {
             foreach (var section in ModSectionsContainer.Children)
                 section.DeselectAll();
@@ -373,28 +316,33 @@ namespace osu.Game.Overlays.Mods
             refreshSelectedMods();
         }
 
+        /// <summary>
+        /// Deselect one or more mods.
+        /// </summary>
+        /// <param name="modTypes">The types of <see cref="Mod"/>s which should be deselected.</param>
+        /// <param name="immediate">Set to true to bypass animations and update selections immediately.</param>
+        public void DeselectTypes(Type[] modTypes, bool immediate = false)
+        {
+            if (modTypes.Length == 0) return;
+
+            foreach (var section in ModSectionsContainer.Children)
+                section.DeselectTypes(modTypes, immediate);
+        }
+
         protected override void LoadComplete()
         {
             base.LoadComplete();
 
-            availableMods.BindValueChanged(_ => updateAvailableMods(), true);
-
-            // intentionally bound after the above line to avoid a potential update feedback cycle.
-            // i haven't actually observed this happening but as updateAvailableMods() changes the selection it is plausible.
-            SelectedMods.BindValueChanged(_ => updateSelectedButtons());
+            availableMods.BindValueChanged(availableModsChanged, true);
+            SelectedMods.BindValueChanged(selectedModsChanged, true);
         }
 
         protected override void PopOut()
         {
             base.PopOut();
 
-            foreach (var section in ModSectionsContainer)
-            {
-                section.FlushAnimation();
-            }
-
-            FooterContainer.MoveToX(content_width, WaveContainer.DISAPPEAR_DURATION, Easing.InSine);
-            FooterContainer.FadeOut(WaveContainer.DISAPPEAR_DURATION, Easing.InSine);
+            footerContainer.MoveToX(footerContainer.DrawSize.X, WaveContainer.DISAPPEAR_DURATION, Easing.InSine);
+            footerContainer.FadeOut(WaveContainer.DISAPPEAR_DURATION, Easing.InSine);
 
             foreach (var section in ModSectionsContainer.Children)
             {
@@ -408,8 +356,8 @@ namespace osu.Game.Overlays.Mods
         {
             base.PopIn();
 
-            FooterContainer.MoveToX(0, WaveContainer.APPEAR_DURATION, Easing.OutQuint);
-            FooterContainer.FadeIn(WaveContainer.APPEAR_DURATION, Easing.OutQuint);
+            footerContainer.MoveToX(0, WaveContainer.APPEAR_DURATION, Easing.OutQuint);
+            footerContainer.FadeIn(WaveContainer.APPEAR_DURATION, Easing.OutQuint);
 
             foreach (var section in ModSectionsContainer.Children)
             {
@@ -440,59 +388,23 @@ namespace osu.Game.Overlays.Mods
 
         public override bool OnPressed(GlobalAction action) => false; // handled by back button
 
-        private void updateAvailableMods()
+        private void availableModsChanged(ValueChangedEvent<Dictionary<ModType, IReadOnlyList<Mod>>> mods)
         {
-            if (availableMods?.Value == null)
-                return;
+            if (mods.NewValue == null) return;
 
             foreach (var section in ModSectionsContainer.Children)
-            {
-                IEnumerable<Mod> modEnumeration = availableMods.Value[section.ModType];
-
-                if (!Stacked)
-                    modEnumeration = ModUtils.FlattenMods(modEnumeration);
-
-                section.Mods = modEnumeration.Select(getValidModOrNull).Where(m => m != null);
-            }
-
-            updateSelectedButtons();
-            OnAvailableModsChanged();
+                section.Mods = mods.NewValue[section.ModType];
         }
 
-        /// <summary>
-        /// Returns a valid form of a given <see cref="Mod"/> if possible, or null otherwise.
-        /// </summary>
-        /// <remarks>
-        /// This is a recursive process during which any invalid mods are culled while preserving <see cref="MultiMod"/> structures where possible.
-        /// </remarks>
-        /// <param name="mod">The <see cref="Mod"/> to check.</param>
-        /// <returns>A valid form of <paramref name="mod"/> if exists, or null otherwise.</returns>
-        [CanBeNull]
-        private Mod getValidModOrNull([NotNull] Mod mod)
+        private void selectedModsChanged(ValueChangedEvent<IReadOnlyList<Mod>> mods)
         {
-            if (!(mod is MultiMod multi))
-                return IsValidMod(mod) ? mod : null;
-
-            var validSubset = multi.Mods.Select(getValidModOrNull).Where(m => m != null).ToArray();
-
-            if (validSubset.Length == 0)
-                return null;
-
-            return validSubset.Length == 1 ? validSubset[0] : new MultiMod(validSubset);
-        }
-
-        private void updateSelectedButtons()
-        {
-            // Enumeration below may update the bindable list.
-            var selectedMods = SelectedMods.Value.ToList();
-
             foreach (var section in ModSectionsContainer.Children)
-                section.UpdateSelectedButtons(selectedMods);
+                section.SelectTypes(mods.NewValue.Select(m => m.GetType()).ToList());
 
-            updateMultiplier();
+            updateMods();
         }
 
-        private void updateMultiplier()
+        private void updateMods()
         {
             var multiplier = 1.0;
 
@@ -514,49 +426,21 @@ namespace osu.Game.Overlays.Mods
         {
             if (selectedMod != null)
             {
-                if (State.Value == Visibility.Visible)
-                    Scheduler.AddOnce(playSelectedSound);
+                if (State.Value == Visibility.Visible) sampleOn?.Play();
 
-                OnModSelected(selectedMod);
+                DeselectTypes(selectedMod.IncompatibleMods, true);
 
-                if (selectedMod.RequiresConfiguration && AllowConfiguration)
-                    ModSettingsContainer.Show();
+                if (selectedMod.RequiresConfiguration) ModSettingsContainer.Alpha = 1;
             }
             else
             {
-                if (State.Value == Visibility.Visible)
-                    Scheduler.AddOnce(playDeselectedSound);
+                if (State.Value == Visibility.Visible) sampleOff?.Play();
             }
 
             refreshSelectedMods();
         }
 
-        private void playSelectedSound() => sampleOn?.Play();
-        private void playDeselectedSound() => sampleOff?.Play();
-
-        /// <summary>
-        /// Invoked after <see cref="availableMods"/> has changed.
-        /// </summary>
-        protected virtual void OnAvailableModsChanged()
-        {
-        }
-
-        /// <summary>
-        /// Invoked when a new <see cref="Mod"/> has been selected.
-        /// </summary>
-        /// <param name="mod">The <see cref="Mod"/> that has been selected.</param>
-        protected virtual void OnModSelected(Mod mod)
-        {
-        }
-
         private void refreshSelectedMods() => SelectedMods.Value = ModSectionsContainer.Children.SelectMany(s => s.SelectedMods).ToArray();
-
-        /// <summary>
-        /// Creates a <see cref="ModSection"/> that groups <see cref="Mod"/>s with the same <see cref="ModType"/>.
-        /// </summary>
-        /// <param name="type">The <see cref="ModType"/> of <see cref="Mod"/>s in the section.</param>
-        /// <returns>The <see cref="ModSection"/>.</returns>
-        protected virtual ModSection CreateModSection(ModType type) => new ModSection(type);
 
         #region Disposal
 

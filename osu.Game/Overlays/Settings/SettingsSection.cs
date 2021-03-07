@@ -1,15 +1,16 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System.Collections.Generic;
-using System.Linq;
+using osuTK;
+using osuTK.Graphics;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Sprites;
-using osuTK.Graphics;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace osu.Game.Overlays.Settings
 {
@@ -25,7 +26,7 @@ namespace osu.Game.Overlays.Settings
         public virtual IEnumerable<string> FilterTerms => new[] { Header };
 
         private const int header_size = 26;
-        private const int margin = 20;
+        private const int header_margin = 25;
         private const int border_size = 2;
 
         public bool MatchingFilter
@@ -37,7 +38,7 @@ namespace osu.Game.Overlays.Settings
 
         protected SettingsSection()
         {
-            Margin = new MarginPadding { Top = margin };
+            Margin = new MarginPadding { Top = 20 };
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
 
@@ -45,9 +46,10 @@ namespace osu.Game.Overlays.Settings
             {
                 Margin = new MarginPadding
                 {
-                    Top = header_size
+                    Top = header_size + header_margin
                 },
                 Direction = FillDirection.Vertical,
+                Spacing = new Vector2(0, 30),
                 AutoSizeAxes = Axes.Y,
                 RelativeSizeAxes = Axes.X,
             };
@@ -68,7 +70,7 @@ namespace osu.Game.Overlays.Settings
                 {
                     Padding = new MarginPadding
                     {
-                        Top = margin + border_size,
+                        Top = 20 + border_size,
                         Bottom = 10,
                     },
                     RelativeSizeAxes = Axes.X,
@@ -80,11 +82,7 @@ namespace osu.Game.Overlays.Settings
                             Font = OsuFont.GetFont(size: header_size),
                             Text = Header,
                             Colour = colours.Yellow,
-                            Margin = new MarginPadding
-                            {
-                                Left = SettingsPanel.CONTENT_MARGINS,
-                                Right = SettingsPanel.CONTENT_MARGINS
-                            }
+                            Margin = new MarginPadding { Left = SettingsPanel.CONTENT_MARGINS, Right = SettingsPanel.CONTENT_MARGINS }
                         },
                         FlowContent
                     }

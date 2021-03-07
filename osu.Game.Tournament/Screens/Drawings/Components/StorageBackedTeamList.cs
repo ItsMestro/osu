@@ -40,7 +40,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                                 continue;
 
                             // ReSharper disable once PossibleNullReferenceException
-                            string[] split = line.Split(':');
+                            string[] split = line.Split('å');
 
                             if (split.Length < 2)
                             {
@@ -52,7 +52,10 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                             {
                                 FullName = { Value = split[1].Trim(), },
                                 Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
-                                FlagName = { Value = split[0].Trim() }
+                                FlagName = { Value = split[0].Trim() },
+                                PlayerOne = { Value = split[3].Trim(), },
+                                PlayerTwo = { Value = split[4].Trim(), },
+                                FlagName2 = { Value = split[5].Trim() }
                             });
                         }
                     }

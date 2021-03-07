@@ -9,6 +9,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Rulesets.Taiko.Tests.csproj",
                 "-p:GenerateFullPaths=true",
                 "-m",
@@ -23,6 +24,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Rulesets.Taiko.Tests.csproj",
                 "-p:Configuration=Release",
                 "-p:GenerateFullPaths=true",
@@ -31,6 +33,15 @@
             ],
             "group": "build",
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Restore",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "restore"
+            ],
+            "problemMatcher": []
         }
     ]
 }

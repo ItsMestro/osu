@@ -99,15 +99,12 @@ namespace osu.Game.Tests.Visual.Online
         [BackgroundDependencyLoader]
         private void load(RulesetStore rulesets)
         {
-            var normal = CreateBeatmap(Ruleset.Value).BeatmapInfo.BeatmapSet;
+            var normal = CreateWorkingBeatmap(Ruleset.Value).BeatmapSetInfo;
             normal.OnlineInfo.HasVideo = true;
             normal.OnlineInfo.HasStoryboard = true;
 
             var undownloadable = getUndownloadableBeatmapSet();
             var manyDifficulties = getManyDifficultiesBeatmapSet(rulesets);
-
-            var explicitMap = CreateBeatmap(Ruleset.Value).BeatmapInfo.BeatmapSet;
-            explicitMap.OnlineInfo.HasExplicitContent = true;
 
             Child = new BasicScrollContainer
             {
@@ -124,11 +121,9 @@ namespace osu.Game.Tests.Visual.Online
                         new GridBeatmapPanel(normal),
                         new GridBeatmapPanel(undownloadable),
                         new GridBeatmapPanel(manyDifficulties),
-                        new GridBeatmapPanel(explicitMap),
                         new ListBeatmapPanel(normal),
                         new ListBeatmapPanel(undownloadable),
                         new ListBeatmapPanel(manyDifficulties),
-                        new ListBeatmapPanel(explicitMap)
                     },
                 },
             };

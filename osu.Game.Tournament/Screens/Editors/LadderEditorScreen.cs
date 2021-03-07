@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using System.Drawing;
 using System.Linq;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
@@ -17,6 +16,7 @@ using osu.Game.Tournament.Screens.Ladder;
 using osu.Game.Tournament.Screens.Ladder.Components;
 using osuTK;
 using osuTK.Graphics;
+using SixLabors.Primitives;
 
 namespace osu.Game.Tournament.Screens.Editors
 {

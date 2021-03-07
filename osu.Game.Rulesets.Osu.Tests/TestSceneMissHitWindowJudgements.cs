@@ -1,11 +1,9 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System.Collections.Generic;
 using NUnit.Framework;
 using osu.Game.Beatmaps;
 using osu.Game.Replays;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Beatmaps;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Rulesets.Osu.Objects;
@@ -67,10 +65,10 @@ namespace osu.Game.Rulesets.Osu.Tests
 
         private class TestAutoMod : OsuModAutoplay
         {
-            public override Score CreateReplayScore(IBeatmap beatmap, IReadOnlyList<Mod> mods) => new Score
+            public override Score CreateReplayScore(IBeatmap beatmap) => new Score
             {
                 ScoreInfo = new ScoreInfo { User = new User { Username = "Autoplay" } },
-                Replay = new MissingAutoGenerator(beatmap, mods).Generate()
+                Replay = new MissingAutoGenerator(beatmap).Generate()
             };
         }
 
@@ -78,8 +76,8 @@ namespace osu.Game.Rulesets.Osu.Tests
         {
             public new OsuBeatmap Beatmap => (OsuBeatmap)base.Beatmap;
 
-            public MissingAutoGenerator(IBeatmap beatmap, IReadOnlyList<Mod> mods)
-                : base(beatmap, mods)
+            public MissingAutoGenerator(IBeatmap beatmap)
+                : base(beatmap)
             {
             }
 

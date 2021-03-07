@@ -10,14 +10,13 @@ using osuTK.Graphics;
 
 namespace osu.Game.Tournament.Screens.Showcase
 {
-    public class ShowcaseScreen : BeatmapInfoScreen // IProvideVideo
+    public class Showcase : BeatmapInfoScreen // IProvideVideo
     {
         [BackgroundDependencyLoader]
         private void load()
         {
             AddRangeInternal(new Drawable[]
             {
-                new TournamentLogo(),
                 new TourneyVideo("showcase")
                 {
                     Loop = true,

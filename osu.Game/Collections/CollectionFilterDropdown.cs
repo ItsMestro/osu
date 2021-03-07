@@ -11,7 +11,6 @@ using osu.Framework.Graphics;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.UserInterface;
 using osu.Framework.Input.Events;
-using osu.Framework.Localisation;
 using osu.Game.Beatmaps;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Containers;
@@ -30,14 +29,6 @@ namespace osu.Game.Collections
         /// </summary>
         protected virtual bool ShowManageCollectionsItem => true;
 
-        private readonly BindableWithCurrent<CollectionFilterMenuItem> current = new BindableWithCurrent<CollectionFilterMenuItem>();
-
-        public new Bindable<CollectionFilterMenuItem> Current
-        {
-            get => current.Current;
-            set => current.Current = value;
-        }
-
         private readonly IBindableList<BeatmapCollection> collections = new BindableList<BeatmapCollection>();
         private readonly IBindableList<BeatmapInfo> beatmaps = new BindableList<BeatmapInfo>();
         private readonly BindableList<CollectionFilterMenuItem> filters = new BindableList<CollectionFilterMenuItem>();
@@ -45,28 +36,25 @@ namespace osu.Game.Collections
         [Resolved(CanBeNull = true)]
         private ManageCollectionsDialog manageCollectionsDialog { get; set; }
 
-        [Resolved(CanBeNull = true)]
-        private CollectionManager collectionManager { get; set; }
-
         public CollectionFilterDropdown()
         {
             ItemSource = filters;
-            Current.Value = new AllBeatmapsCollectionFilterMenuItem();
+        }
+
+        [BackgroundDependencyLoader(permitNulls: true)]
+        private void load([CanBeNull] CollectionManager collectionManager)
+        {
+            if (collectionManager != null)
+                collections.BindTo(collectionManager.Collections);
+
+            collections.CollectionChanged += (_, __) => collectionsChanged();
+            collectionsChanged();
         }
 
         protected override void LoadComplete()
         {
             base.LoadComplete();
 
-            if (collectionManager != null)
-                collections.BindTo(collectionManager.Collections);
-
-            // Dropdown has logic which triggers a change on the bindable with every change to the contained items.
-            // This is not desirable here, as it leads to multiple filter operations running even though nothing has changed.
-            // An extra bindable is enough to subvert this behaviour.
-            base.Current = Current;
-
-            collections.BindCollectionChanged((_, __) => collectionsChanged(), true);
             Current.BindValueChanged(filterChanged, true);
         }
 
@@ -122,7 +110,7 @@ namespace osu.Game.Collections
             Current.TriggerChange();
         }
 
-        protected override LocalisableString GenerateItemText(CollectionFilterMenuItem item) => item.CollectionName.Value;
+        protected override string GenerateItemText(CollectionFilterMenuItem item) => item.CollectionName.Value;
 
         protected sealed override DropdownHeader CreateHeader() => CreateCollectionHeader().With(d =>
         {
@@ -140,7 +128,7 @@ namespace osu.Game.Collections
             public readonly Bindable<CollectionFilterMenuItem> SelectedItem = new Bindable<CollectionFilterMenuItem>();
             private readonly Bindable<string> collectionName = new Bindable<string>();
 
-            protected override LocalisableString Label
+            protected override string Label
             {
                 get => base.Label;
                 set { } // See updateText().

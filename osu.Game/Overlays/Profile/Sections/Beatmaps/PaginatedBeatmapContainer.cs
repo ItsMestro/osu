@@ -14,7 +14,7 @@ using osuTK;
 
 namespace osu.Game.Overlays.Profile.Sections.Beatmaps
 {
-    public class PaginatedBeatmapContainer : PaginatedProfileSubsection<APIBeatmapSet>
+    public class PaginatedBeatmapContainer : PaginatedContainer<APIBeatmapSet>
     {
         private const float panel_padding = 10f;
         private readonly BeatmapSetType type;

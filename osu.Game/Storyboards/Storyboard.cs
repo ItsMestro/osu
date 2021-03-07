@@ -27,14 +27,7 @@ namespace osu.Game.Storyboards
 
         public bool HasDrawable => Layers.Any(l => l.Elements.Any(e => e.IsDrawable));
 
-        /// <summary>
-        /// Across all layers, find the earliest point in time that a storyboard element exists at.
-        /// Will return null if there are no elements.
-        /// </summary>
-        /// <remarks>
-        /// This iterates all elements and as such should be used sparingly or stored locally.
-        /// </remarks>
-        public double? EarliestEventTime => Layers.SelectMany(l => l.Elements).OrderBy(e => e.StartTime).FirstOrDefault()?.StartTime;
+        public double FirstEventTime => Layers.Min(l => l.Elements.FirstOrDefault()?.StartTime ?? 0);
 
         /// <summary>
         /// Depth of the currently front-most storyboard layer, excluding the overlay layer.

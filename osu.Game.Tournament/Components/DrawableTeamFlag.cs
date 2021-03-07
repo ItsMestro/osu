@@ -19,8 +19,13 @@ namespace osu.Game.Tournament.Components
 
         [UsedImplicitly]
         private Bindable<string> flag;
+        private Bindable<string> flag2;
 
         private Sprite flagSprite;
+        private Sprite flagSprite2;
+
+        private FillFlowContainer flow;
+        private FillFlowContainer flow2;
 
         public DrawableTeamFlag(TournamentTeam team)
         {
@@ -32,7 +37,44 @@ namespace osu.Game.Tournament.Components
         {
             if (team == null) return;
 
-            Size = new Vector2(75, 50);
+
+            InternalChildren = new Drawable[]
+            {
+                flow = new FillFlowContainer
+                {
+                    Size = new Vector2(38, 50),
+                    Masking = true,
+                    //CornerRadius = 5,
+                    /*Position = new Vector2(-1,0),*/
+                    Anchor = Anchor.CentreRight,
+                    Origin = Anchor.CentreRight,
+                    Child = flagSprite = new Sprite
+                    {
+                        Blending = BlendingParameters.Mixture,
+                        Size = new Vector2(75, 50),
+                        Anchor = Anchor.CentreLeft,
+                        Origin = Anchor.CentreLeft,
+                    }
+                },
+                flow2 = new FillFlowContainer
+                {
+                    Size = new Vector2(38, 50),
+                    Masking = true,
+                    //CornerRadius = 5,
+                    /*Position = new Vector2(10,0),*/
+                    Anchor = Anchor.CentreLeft,
+                    Origin = Anchor.CentreLeft,
+                    Child = flagSprite2 = new Sprite
+                    {
+                        Blending = BlendingParameters.Mixture,
+                        Size = new Vector2(75, 50),
+                        Origin = Anchor.CentreRight,
+                        Anchor = Anchor.CentreRight,
+                    }
+                },
+            };
+
+            /*Size = new Vector2(75, 50);
             Masking = true;
             CornerRadius = 5;
             Child = flagSprite = new Sprite
@@ -41,9 +83,10 @@ namespace osu.Game.Tournament.Components
                 Anchor = Anchor.Centre,
                 Origin = Anchor.Centre,
                 FillMode = FillMode.Fill
-            };
+            };*/
 
             (flag = team.FlagName.GetBoundCopy()).BindValueChanged(acronym => flagSprite.Texture = textures.Get($@"Flags/{team.FlagName}"), true);
+            (flag2 = team.FlagName2.GetBoundCopy()).BindValueChanged(acronym => flagSprite2.Texture = textures.Get($@"Flags/{team.FlagName2}"), true);
         }
     }
 }

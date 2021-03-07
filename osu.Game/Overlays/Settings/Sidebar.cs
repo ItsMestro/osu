@@ -9,9 +9,9 @@ using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Input.Events;
 using osu.Framework.Threading;
-using osu.Game.Graphics;
 using osu.Game.Graphics.Containers;
 using osuTK;
+using osuTK.Graphics;
 
 namespace osu.Game.Overlays.Settings
 {
@@ -32,7 +32,7 @@ namespace osu.Game.Overlays.Settings
             {
                 new Box
                 {
-                    Colour = OsuColour.Gray(0.02f),
+                    Colour = Color4.Black,
                     RelativeSizeAxes = Axes.Both,
                 },
                 new SidebarScrollContainer

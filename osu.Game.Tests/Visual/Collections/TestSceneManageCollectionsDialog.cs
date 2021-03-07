@@ -38,13 +38,13 @@ namespace osu.Game.Tests.Visual.Collections
             Dependencies.Cache(rulesets = new RulesetStore(ContextFactory));
             Dependencies.Cache(beatmapManager = new BeatmapManager(LocalStorage, ContextFactory, rulesets, null, Audio, host, Beatmap.Default));
 
-            beatmapManager.Import(TestResources.GetQuickTestBeatmapForImport()).Wait();
+            beatmapManager.Import(TestResources.GetTestBeatmapForImport()).Wait();
 
             base.Content.AddRange(new Drawable[]
             {
                 manager = new CollectionManager(LocalStorage),
                 Content,
-                dialogOverlay = new DialogOverlay(),
+                dialogOverlay = new DialogOverlay()
             });
 
             Dependencies.Cache(manager);
@@ -132,27 +132,6 @@ namespace osu.Game.Tests.Visual.Collections
             AddStep("remove first collection", () => manager.Collections.RemoveAt(0));
             assertCollectionCount(1);
             assertCollectionName(0, "2");
-        }
-
-        [Test]
-        public void TestCollectionNameCollisions()
-        {
-            AddStep("add dropdown", () =>
-            {
-                Add(new CollectionFilterDropdown
-                    {
-                        Anchor = Anchor.TopRight,
-                        Origin = Anchor.TopRight,
-                        RelativeSizeAxes = Axes.X,
-                        Width = 0.4f,
-                    }
-                );
-            });
-            AddStep("add two collections with same name", () => manager.Collections.AddRange(new[]
-            {
-                new BeatmapCollection { Name = { Value = "1" } },
-                new BeatmapCollection { Name = { Value = "1" }, Beatmaps = { beatmapManager.GetAllUsableBeatmapSets().First().Beatmaps[0] } },
-            }));
         }
 
         [Test]

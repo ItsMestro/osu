@@ -2,8 +2,10 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using osu.Framework.Allocation;
+using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
+using osu.Game.Beatmaps;
 using osu.Game.Graphics;
 using osuTK;
 
@@ -17,7 +19,7 @@ namespace osu.Game.Screens.Edit.Setup
         protected OsuColour Colours { get; private set; }
 
         [Resolved]
-        protected EditorBeatmap Beatmap { get; private set; }
+        protected IBindable<WorkingBeatmap> Beatmap { get; private set; }
 
         protected override Container<Drawable> Content => flow;
 

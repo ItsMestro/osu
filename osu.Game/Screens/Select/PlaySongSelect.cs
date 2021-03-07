@@ -9,7 +9,6 @@ using osu.Framework.Screens;
 using osu.Game.Graphics;
 using osu.Game.Overlays;
 using osu.Game.Overlays.Notifications;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Scoring;
 using osu.Game.Screens.Play;
 using osu.Game.Screens.Ranking;
@@ -39,11 +38,9 @@ namespace osu.Game.Screens.Select
         }
 
         protected void PresentScore(ScoreInfo score) =>
-            FinaliseSelection(score.Beatmap, score.Ruleset, () => this.Push(new SoloResultsScreen(score, false)));
+            FinaliseSelection(score.Beatmap, score.Ruleset, () => this.Push(new SoloResultsScreen(score)));
 
         protected override BeatmapDetailArea CreateBeatmapDetailArea() => new PlayBeatmapDetailArea();
-
-        private ModAutoplay getAutoplayMod() => Ruleset.Value.CreateInstance().GetAutoplayMod();
 
         public override void OnResuming(IScreen last)
         {
@@ -53,10 +50,10 @@ namespace osu.Game.Screens.Select
 
             if (removeAutoModOnResume)
             {
-                var autoType = getAutoplayMod()?.GetType();
+                var autoType = Ruleset.Value.CreateInstance().GetAutoplayMod()?.GetType();
 
                 if (autoType != null)
-                    Mods.Value = Mods.Value.Where(m => m.GetType() != autoType).ToArray();
+                    ModSelect.DeselectTypes(new[] { autoType }, true);
 
                 removeAutoModOnResume = false;
             }
@@ -84,9 +81,12 @@ namespace osu.Game.Screens.Select
             // Ctrl+Enter should start map with autoplay enabled.
             if (GetContainingInputManager().CurrentState?.Keyboard.ControlPressed == true)
             {
-                var autoplayMod = getAutoplayMod();
+                var auto = Ruleset.Value.CreateInstance().GetAutoplayMod();
+                var autoType = auto?.GetType();
 
-                if (autoplayMod == null)
+                var mods = Mods.Value;
+
+                if (autoType == null)
                 {
                     notifications?.Post(new SimpleNotification
                     {
@@ -95,11 +95,9 @@ namespace osu.Game.Screens.Select
                     return false;
                 }
 
-                var mods = Mods.Value;
-
-                if (mods.All(m => m.GetType() != autoplayMod.GetType()))
+                if (mods.All(m => m.GetType() != autoType))
                 {
-                    Mods.Value = mods.Append(autoplayMod).ToArray();
+                    Mods.Value = mods.Append(auto).ToArray();
                     removeAutoModOnResume = true;
                 }
             }

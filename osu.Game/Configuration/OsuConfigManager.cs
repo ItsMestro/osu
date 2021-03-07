@@ -1,8 +1,6 @@
-// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
-using System.Diagnostics;
 using osu.Framework.Bindables;
 using osu.Framework.Configuration;
 using osu.Framework.Configuration.Tracking;
@@ -10,7 +8,6 @@ using osu.Framework.Extensions;
 using osu.Framework.Platform;
 using osu.Framework.Testing;
 using osu.Game.Input;
-using osu.Game.Input.Bindings;
 using osu.Game.Overlays;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Screens.Select;
@@ -60,8 +57,6 @@ namespace osu.Game.Configuration
             Set(OsuSetting.ExternalLinkWarning, true);
             Set(OsuSetting.PreferNoVideo, false);
 
-            Set(OsuSetting.ShowOnlineExplicitContent, false);
-
             // Audio
             Set(OsuSetting.VolumeInactive, 0.25, 0, 1, 0.01);
 
@@ -84,7 +79,6 @@ namespace osu.Game.Configuration
 
             Set(OsuSetting.ShowStoryboard, true);
             Set(OsuSetting.BeatmapSkins, true);
-            Set(OsuSetting.BeatmapColours, true);
             Set(OsuSetting.BeatmapHitsounds, true);
 
             Set(OsuSetting.CursorRotation, true);
@@ -141,8 +135,6 @@ namespace osu.Game.Configuration
             Set(OsuSetting.MenuBackgroundSource, BackgroundSource.Skin);
             Set(OsuSetting.SeasonalBackgroundMode, SeasonalBackgroundMode.Sometimes);
 
-            Set(OsuSetting.DiscordRichPresence, DiscordRichPresenceMode.Full);
-
             Set(OsuSetting.EditorWaveformOpacity, 1f);
         }
 
@@ -180,28 +172,12 @@ namespace osu.Game.Configuration
             }
         }
 
-        public override TrackedSettings CreateTrackedSettings()
+        public override TrackedSettings CreateTrackedSettings() => new TrackedSettings
         {
-            // these need to be assigned in normal game startup scenarios.
-            Debug.Assert(LookupKeyBindings != null);
-            Debug.Assert(LookupSkinName != null);
-
-            return new TrackedSettings
-            {
-                new TrackedSetting<bool>(OsuSetting.MouseDisableButtons, v => new SettingDescription(!v, "gameplay mouse buttons", v ? "disabled" : "enabled", LookupKeyBindings(GlobalAction.ToggleGameplayMouseButtons))),
-                new TrackedSetting<HUDVisibilityMode>(OsuSetting.HUDVisibilityMode, m => new SettingDescription(m, "HUD Visibility", m.GetDescription(), $"cycle: {LookupKeyBindings(GlobalAction.ToggleInGameInterface)} quick view: {LookupKeyBindings(GlobalAction.HoldForHUD)}")),
-                new TrackedSetting<ScalingMode>(OsuSetting.Scaling, m => new SettingDescription(m, "scaling", m.GetDescription())),
-                new TrackedSetting<int>(OsuSetting.Skin, m =>
-                {
-                    string skinName = LookupSkinName(m) ?? string.Empty;
-                    return new SettingDescription(skinName, "skin", skinName, $"random: {LookupKeyBindings(GlobalAction.RandomSkin)}");
-                })
-            };
-        }
-
-        public Func<int, string> LookupSkinName { private get; set; }
-
-        public Func<GlobalAction, string> LookupKeyBindings { get; set; }
+            new TrackedSetting<bool>(OsuSetting.MouseDisableButtons, v => new SettingDescription(!v, "gameplay mouse buttons", v ? "disabled" : "enabled")),
+            new TrackedSetting<HUDVisibilityMode>(OsuSetting.HUDVisibilityMode, m => new SettingDescription(m, "HUD Visibility", m.GetDescription())),
+            new TrackedSetting<ScalingMode>(OsuSetting.Scaling, m => new SettingDescription(m, "scaling", m.GetDescription())),
+        };
     }
 
     public enum OsuSetting
@@ -253,7 +229,6 @@ namespace osu.Game.Configuration
         ScreenshotCaptureMenuCursor,
         SongSelectRightMouseScroll,
         BeatmapSkins,
-        BeatmapColours,
         BeatmapHitsounds,
         IncreaseFirstObjectVisibility,
         ScoreDisplayMode,
@@ -272,8 +247,6 @@ namespace osu.Game.Configuration
         GameplayDisableWinKey,
         SeasonalBackgroundMode,
         EditorWaveformOpacity,
-        DiscordRichPresence,
         AutomaticallyDownloadWhenSpectating,
-        ShowOnlineExplicitContent,
     }
 }

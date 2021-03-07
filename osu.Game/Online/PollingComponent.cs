@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-using osu.Framework.Bindables;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Threading;
 
@@ -20,11 +19,22 @@ namespace osu.Game.Online
 
         private bool pollingActive;
 
+        private double timeBetweenPolls;
+
         /// <summary>
         /// The time in milliseconds to wait between polls.
         /// Setting to zero stops all polling.
         /// </summary>
-        public readonly Bindable<double> TimeBetweenPolls = new Bindable<double>();
+        public double TimeBetweenPolls
+        {
+            get => timeBetweenPolls;
+            set
+            {
+                timeBetweenPolls = value;
+                scheduledPoll?.Cancel();
+                pollIfNecessary();
+            }
+        }
 
         /// <summary>
         ///
@@ -32,13 +42,7 @@ namespace osu.Game.Online
         /// <param name="timeBetweenPolls">The initial time in milliseconds to wait between polls. Setting to zero stops all polling.</param>
         protected PollingComponent(double timeBetweenPolls = 0)
         {
-            TimeBetweenPolls.BindValueChanged(_ =>
-            {
-                scheduledPoll?.Cancel();
-                pollIfNecessary();
-            });
-
-            TimeBetweenPolls.Value = timeBetweenPolls;
+            TimeBetweenPolls = timeBetweenPolls;
         }
 
         protected override void LoadComplete()
@@ -56,7 +60,7 @@ namespace osu.Game.Online
             if (pollingActive) return false;
 
             // don't try polling if the time between polls hasn't been set.
-            if (TimeBetweenPolls.Value == 0) return false;
+            if (timeBetweenPolls == 0) return false;
 
             if (!lastTimePolled.HasValue)
             {
@@ -64,7 +68,7 @@ namespace osu.Game.Online
                 return true;
             }
 
-            if (Time.Current - lastTimePolled.Value > TimeBetweenPolls.Value)
+            if (Time.Current - lastTimePolled.Value > timeBetweenPolls)
             {
                 doPoll();
                 return true;
@@ -95,7 +99,7 @@ namespace osu.Game.Online
         /// </summary>
         public void PollImmediately()
         {
-            lastTimePolled = Time.Current - TimeBetweenPolls.Value;
+            lastTimePolled = Time.Current - timeBetweenPolls;
             scheduleNextPoll();
         }
 
@@ -117,7 +121,7 @@ namespace osu.Game.Online
 
             double lastPollDuration = lastTimePolled.HasValue ? Time.Current - lastTimePolled.Value : 0;
 
-            scheduledPoll = Scheduler.AddDelayed(doPoll, Math.Max(0, TimeBetweenPolls.Value - lastPollDuration));
+            scheduledPoll = Scheduler.AddDelayed(doPoll, Math.Max(0, timeBetweenPolls - lastPollDuration));
         }
     }
 }

@@ -48,9 +48,9 @@ namespace osu.Game.Rulesets.Mania.Edit.Blueprints
             return true;
         }
 
-        public override void UpdateTimeAndPosition(SnapResult result)
+        public override void UpdatePosition(SnapResult result)
         {
-            base.UpdateTimeAndPosition(result);
+            base.UpdatePosition(result);
 
             if (!PlacementActive)
                 Column = result.Playfield as Column;

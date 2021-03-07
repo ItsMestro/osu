@@ -9,6 +9,7 @@ using osuTK;
 using osu.Game.Online.API.Requests.Responses;
 using osu.Game.Users.Drawables;
 using osu.Game.Graphics.Containers;
+using osu.Game.Utils;
 using osu.Framework.Graphics.Cursor;
 using osu.Framework.Bindables;
 using System.Linq;
@@ -244,32 +245,11 @@ namespace osu.Game.Overlays.Comments
 
             if (Comment.EditedAt.HasValue)
             {
-                var font = OsuFont.GetFont(size: 12, weight: FontWeight.Regular);
-                var colour = colourProvider.Foreground1;
-
-                info.Add(new FillFlowContainer
+                info.Add(new OsuSpriteText
                 {
-                    AutoSizeAxes = Axes.Both,
-                    Children = new Drawable[]
-                    {
-                        new OsuSpriteText
-                        {
-                            Font = font,
-                            Text = "edited ",
-                            Colour = colour
-                        },
-                        new DrawableDate(Comment.EditedAt.Value)
-                        {
-                            Font = font,
-                            Colour = colour
-                        },
-                        new OsuSpriteText
-                        {
-                            Font = font,
-                            Text = $@" by {Comment.EditedUser.Username}",
-                            Colour = colour
-                        },
-                    }
+                    Font = OsuFont.GetFont(size: 12, weight: FontWeight.Regular),
+                    Text = $@"edited {HumanizerUtils.Humanize(Comment.EditedAt.Value)} by {Comment.EditedUser.Username}",
+                    Colour = colourProvider.Foreground1
                 });
             }
 

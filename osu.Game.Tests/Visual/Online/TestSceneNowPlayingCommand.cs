@@ -6,7 +6,6 @@ using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Testing;
 using osu.Game.Beatmaps;
-using osu.Game.Online.API;
 using osu.Game.Online.Chat;
 using osu.Game.Rulesets;
 using osu.Game.Users;
@@ -19,8 +18,6 @@ namespace osu.Game.Tests.Visual.Online
         [Cached(typeof(IChannelPostTarget))]
         private PostTarget postTarget { get; set; }
 
-        private DummyAPIAccess api => (DummyAPIAccess)API;
-
         public TestSceneNowPlayingCommand()
         {
             Add(postTarget = new PostTarget());
@@ -29,7 +26,7 @@ namespace osu.Game.Tests.Visual.Online
         [Test]
         public void TestGenericActivity()
         {
-            AddStep("Set activity", () => api.Activity.Value = new UserActivity.InLobby(null));
+            AddStep("Set activity", () => API.Activity.Value = new UserActivity.InLobby(null));
 
             AddStep("Run command", () => Add(new NowPlayingCommand()));
 
@@ -39,7 +36,7 @@ namespace osu.Game.Tests.Visual.Online
         [Test]
         public void TestEditActivity()
         {
-            AddStep("Set activity", () => api.Activity.Value = new UserActivity.Editing(new BeatmapInfo()));
+            AddStep("Set activity", () => API.Activity.Value = new UserActivity.Editing(new BeatmapInfo()));
 
             AddStep("Run command", () => Add(new NowPlayingCommand()));
 
@@ -49,7 +46,7 @@ namespace osu.Game.Tests.Visual.Online
         [Test]
         public void TestPlayActivity()
         {
-            AddStep("Set activity", () => api.Activity.Value = new UserActivity.SoloGame(new BeatmapInfo(), new RulesetInfo()));
+            AddStep("Set activity", () => API.Activity.Value = new UserActivity.SoloGame(new BeatmapInfo(), new RulesetInfo()));
 
             AddStep("Run command", () => Add(new NowPlayingCommand()));
 
@@ -60,7 +57,7 @@ namespace osu.Game.Tests.Visual.Online
         [TestCase(false)]
         public void TestLinkPresence(bool hasOnlineId)
         {
-            AddStep("Set activity", () => api.Activity.Value = new UserActivity.InLobby(null));
+            AddStep("Set activity", () => API.Activity.Value = new UserActivity.InLobby(null));
 
             AddStep("Set beatmap", () => Beatmap.Value = new DummyWorkingBeatmap(Audio, null)
             {
@@ -70,7 +67,7 @@ namespace osu.Game.Tests.Visual.Online
             AddStep("Run command", () => Add(new NowPlayingCommand()));
 
             if (hasOnlineId)
-                AddAssert("Check link presence", () => postTarget.LastMessage.Contains("/b/1234"));
+                AddAssert("Check link presence", () => postTarget.LastMessage.Contains("https://osu.ppy.sh/b/1234"));
             else
                 AddAssert("Check link not present", () => !postTarget.LastMessage.Contains("https://"));
         }

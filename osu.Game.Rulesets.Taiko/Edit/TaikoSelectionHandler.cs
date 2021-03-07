@@ -52,24 +52,32 @@ namespace osu.Game.Rulesets.Taiko.Edit
 
         public void SetStrongState(bool state)
         {
-            EditorBeatmap.PerformOnSelection(h =>
-            {
-                if (!(h is Hit taikoHit)) return;
+            var hits = EditorBeatmap.SelectedHitObjects.OfType<Hit>();
 
-                if (taikoHit.IsStrong != state)
+            EditorBeatmap.BeginChange();
+
+            foreach (var h in hits)
+            {
+                if (h.IsStrong != state)
                 {
-                    taikoHit.IsStrong = state;
-                    EditorBeatmap.Update(taikoHit);
+                    h.IsStrong = state;
+                    EditorBeatmap.Update(h);
                 }
-            });
+            }
+
+            EditorBeatmap.EndChange();
         }
 
         public void SetRimState(bool state)
         {
-            EditorBeatmap.PerformOnSelection(h =>
-            {
-                if (h is Hit taikoHit) taikoHit.Type = state ? HitType.Rim : HitType.Centre;
-            });
+            var hits = EditorBeatmap.SelectedHitObjects.OfType<Hit>();
+
+            EditorBeatmap.BeginChange();
+
+            foreach (var h in hits)
+                h.Type = state ? HitType.Rim : HitType.Centre;
+
+            EditorBeatmap.EndChange();
         }
 
         protected override IEnumerable<MenuItem> GetContextMenuItemsForSelection(IEnumerable<SelectionBlueprint> selection)
@@ -88,7 +96,7 @@ namespace osu.Game.Rulesets.Taiko.Edit
             base.UpdateTernaryStates();
 
             selectionRimState.Value = GetStateFromSelection(EditorBeatmap.SelectedHitObjects.OfType<Hit>(), h => h.Type == HitType.Rim);
-            selectionStrongState.Value = GetStateFromSelection(EditorBeatmap.SelectedHitObjects.OfType<TaikoStrongableHitObject>(), h => h.IsStrong);
+            selectionStrongState.Value = GetStateFromSelection(EditorBeatmap.SelectedHitObjects.OfType<TaikoHitObject>(), h => h.IsStrong);
         }
     }
 }

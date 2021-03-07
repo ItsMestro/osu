@@ -3,14 +3,14 @@
 
 using System;
 using osu.Framework.Allocation;
-using osu.Framework.Graphics.Pooling;
+using osu.Framework.Graphics.Containers;
 
 namespace osu.Game.Skinning
 {
     /// <summary>
     /// A drawable which has a callback when the skin changes.
     /// </summary>
-    public abstract class SkinReloadableDrawable : PoolableDrawable
+    public abstract class SkinReloadableDrawable : CompositeDrawable
     {
         /// <summary>
         /// Invoked when <see cref="CurrentSkin"/> has changed.
@@ -27,7 +27,7 @@ namespace osu.Game.Skinning
         /// <summary>
         /// Whether fallback to default skin should be allowed if the custom skin is missing this resource.
         /// </summary>
-        protected bool AllowDefaultFallback => allowFallback == null || allowFallback.Invoke(CurrentSkin);
+        private bool allowDefaultFallback => allowFallback == null || allowFallback.Invoke(CurrentSkin);
 
         /// <summary>
         /// Create a new <see cref="SkinReloadableDrawable"/>
@@ -58,7 +58,7 @@ namespace osu.Game.Skinning
 
         private void skinChanged()
         {
-            SkinChanged(CurrentSkin, AllowDefaultFallback);
+            SkinChanged(CurrentSkin, allowDefaultFallback);
             OnSkinChanged?.Invoke();
         }
 

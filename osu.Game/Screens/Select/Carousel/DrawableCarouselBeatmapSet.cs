@@ -5,14 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Cursor;
 using osu.Framework.Graphics.UserInterface;
-using osu.Framework.Utils;
 using osu.Game.Beatmaps;
 using osu.Game.Collections;
 using osu.Game.Graphics.UserInterface;
@@ -38,13 +35,9 @@ namespace osu.Game.Screens.Select.Carousel
 
         public IEnumerable<DrawableCarouselItem> DrawableBeatmaps => beatmapContainer?.Children ?? Enumerable.Empty<DrawableCarouselItem>();
 
-        [CanBeNull]
         private Container<DrawableCarouselItem> beatmapContainer;
 
         private BeatmapSetInfo beatmapSet;
-
-        [CanBeNull]
-        private Task beatmapsLoadTask;
 
         [Resolved]
         private BeatmapManager manager { get; set; }
@@ -67,33 +60,12 @@ namespace osu.Game.Screens.Select.Carousel
                 viewDetails = beatmapOverlay.FetchAndShowBeatmapSet;
         }
 
-        protected override void Update()
-        {
-            base.Update();
-
-            // position updates should not occur if the item is filtered away.
-            // this avoids panels flying across the screen only to be eventually off-screen or faded out.
-            if (!Item.Visible)
-                return;
-
-            float targetY = Item.CarouselYPosition;
-
-            if (Precision.AlmostEquals(targetY, Y))
-                Y = targetY;
-            else
-                // algorithm for this is taken from ScrollContainer.
-                // while it doesn't necessarily need to match 1:1, as we are emulating scroll in some cases this feels most correct.
-                Y = (float)Interpolation.Lerp(targetY, Y, Math.Exp(-0.01 * Time.Elapsed));
-        }
-
         protected override void UpdateItem()
         {
             base.UpdateItem();
 
             Content.Clear();
-
             beatmapContainer = null;
-            beatmapsLoadTask = null;
 
             if (Item == null)
                 return;
@@ -108,14 +80,8 @@ namespace osu.Game.Screens.Select.Carousel
                 background = new DelayedLoadWrapper(() => new SetPanelBackground(manager.GetWorkingBeatmap(beatmapSet.Beatmaps.FirstOrDefault()))
                 {
                     RelativeSizeAxes = Axes.Both,
-                }, 300)
-                {
-                    RelativeSizeAxes = Axes.Both
-                },
-                mainFlow = new DelayedLoadWrapper(() => new SetPanelContent((CarouselBeatmapSet)Item), 100)
-                {
-                    RelativeSizeAxes = Axes.Both
-                },
+                }, 300),
+                mainFlow = new DelayedLoadWrapper(() => new SetPanelContent((CarouselBeatmapSet)Item), 100),
             };
 
             background.DelayedLoadComplete += fadeContentIn;
@@ -130,7 +96,11 @@ namespace osu.Game.Screens.Select.Carousel
 
             MovementContainer.MoveToX(0, 500, Easing.OutExpo);
 
-            updateBeatmapYPositions();
+            if (beatmapContainer != null)
+            {
+                foreach (var beatmap in beatmapContainer)
+                    beatmap.MoveToY(0, 800, Easing.OutQuint);
+            }
         }
 
         protected override void Selected()
@@ -167,7 +137,7 @@ namespace osu.Game.Screens.Select.Carousel
                     ChildrenEnumerable = visibleBeatmaps.Select(c => c.CreateDrawableRepresentation())
                 };
 
-                beatmapsLoadTask = LoadComponentAsync(beatmapContainer, loaded =>
+                LoadComponentAsync(beatmapContainer, loaded =>
                 {
                     // make sure the pooled target hasn't changed.
                     if (beatmapContainer != loaded)
@@ -177,29 +147,16 @@ namespace osu.Game.Screens.Select.Carousel
                     updateBeatmapYPositions();
                 });
             }
-        }
 
-        private void updateBeatmapYPositions()
-        {
-            if (beatmapContainer == null)
-                return;
-
-            if (beatmapsLoadTask == null || !beatmapsLoadTask.IsCompleted)
-                return;
-
-            float yPos = DrawableCarouselBeatmap.CAROUSEL_BEATMAP_SPACING;
-
-            bool isSelected = Item.State.Value == CarouselItemState.Selected;
-
-            foreach (var panel in beatmapContainer.Children)
+            void updateBeatmapYPositions()
             {
-                if (isSelected)
+                float yPos = DrawableCarouselBeatmap.CAROUSEL_BEATMAP_SPACING;
+
+                foreach (var panel in beatmapContainer.Children)
                 {
                     panel.MoveToY(yPos, 800, Easing.OutQuint);
                     yPos += panel.Item.TotalHeight;
                 }
-                else
-                    panel.MoveToY(0, 800, Easing.OutQuint);
             }
         }
 

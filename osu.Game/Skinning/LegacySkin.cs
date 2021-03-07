@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
+using osu.Framework.Audio;
 using osu.Framework.Audio.Sample;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
@@ -29,7 +30,7 @@ namespace osu.Game.Skinning
         protected TextureStore Textures;
 
         [CanBeNull]
-        protected ISampleStore Samples;
+        protected IResourceStore<SampleChannel> Samples;
 
         /// <summary>
         /// Whether texture for the keys exists.
@@ -53,12 +54,12 @@ namespace osu.Game.Skinning
 
         private readonly Dictionary<int, LegacyManiaSkinConfiguration> maniaConfigurations = new Dictionary<int, LegacyManiaSkinConfiguration>();
 
-        public LegacySkin(SkinInfo skin, IStorageResourceProvider resources)
-            : this(skin, new LegacySkinResourceStore<SkinFileInfo>(skin, resources.Files), resources, "skin.ini")
+        public LegacySkin(SkinInfo skin, IResourceStore<byte[]> storage, AudioManager audioManager)
+            : this(skin, new LegacySkinResourceStore<SkinFileInfo>(skin, storage), audioManager, "skin.ini")
         {
         }
 
-        protected LegacySkin(SkinInfo skin, [CanBeNull] IResourceStore<byte[]> storage, [CanBeNull] IStorageResourceProvider resources, string filename)
+        protected LegacySkin(SkinInfo skin, IResourceStore<byte[]> storage, AudioManager audioManager, string filename)
             : base(skin)
         {
             using (var stream = storage?.GetStream(filename))
@@ -84,12 +85,12 @@ namespace osu.Game.Skinning
 
             if (storage != null)
             {
-                var samples = resources?.AudioManager?.GetSampleStore(storage);
+                var samples = audioManager?.GetSampleStore(storage);
                 if (samples != null)
                     samples.PlaybackConcurrency = OsuGameBase.SAMPLE_CONCURRENCY;
 
                 Samples = samples;
-                Textures = new TextureStore(resources?.CreateTextureLoaderStore(storage));
+                Textures = new TextureStore(new TextureLoaderStore(storage));
 
                 (storage as ResourceStore<byte[]>)?.AddExtension("ogg");
             }
@@ -167,9 +168,6 @@ namespace osu.Game.Skinning
 
                 case LegacyManiaSkinConfigurationLookups.HitPosition:
                     return SkinUtils.As<TValue>(new Bindable<float>(existing.HitPosition));
-
-                case LegacyManiaSkinConfigurationLookups.ScorePosition:
-                    return SkinUtils.As<TValue>(new Bindable<float>(existing.ScorePosition));
 
                 case LegacyManiaSkinConfigurationLookups.LightPosition:
                     return SkinUtils.As<TValue>(new Bindable<float>(existing.LightPosition));
@@ -373,60 +371,25 @@ namespace osu.Game.Skinning
                 }
 
                 case GameplaySkinComponent<HitResult> resultComponent:
-                    Func<Drawable> createDrawable = () => getJudgementAnimation(resultComponent.Component);
-
-                    // kind of wasteful that we throw this away, but should do for now.
-                    if (createDrawable() != null)
+                    switch (resultComponent.Component)
                     {
-                        var particle = getParticleTexture(resultComponent.Component);
+                        case HitResult.Miss:
+                            return this.GetAnimation("hit0", true, false);
 
-                        if (particle != null)
-                            return new LegacyJudgementPieceNew(resultComponent.Component, createDrawable, particle);
-                        else
-                            return new LegacyJudgementPieceOld(resultComponent.Component, createDrawable);
+                        case HitResult.Meh:
+                            return this.GetAnimation("hit50", true, false);
+
+                        case HitResult.Ok:
+                            return this.GetAnimation("hit100", true, false);
+
+                        case HitResult.Great:
+                            return this.GetAnimation("hit300", true, false);
                     }
 
                     break;
             }
 
             return this.GetAnimation(component.LookupName, false, false);
-        }
-
-        private Texture getParticleTexture(HitResult result)
-        {
-            switch (result)
-            {
-                case HitResult.Meh:
-                    return GetTexture("particle50");
-
-                case HitResult.Ok:
-                    return GetTexture("particle100");
-
-                case HitResult.Great:
-                    return GetTexture("particle300");
-            }
-
-            return null;
-        }
-
-        private Drawable getJudgementAnimation(HitResult result)
-        {
-            switch (result)
-            {
-                case HitResult.Miss:
-                    return this.GetAnimation("hit0", true, false);
-
-                case HitResult.Meh:
-                    return this.GetAnimation("hit50", true, false);
-
-                case HitResult.Ok:
-                    return this.GetAnimation("hit100", true, false);
-
-                case HitResult.Great:
-                    return this.GetAnimation("hit300", true, false);
-            }
-
-            return null;
         }
 
         public override Texture GetTexture(string componentName, WrapMode wrapModeS, WrapMode wrapModeT)
@@ -452,7 +415,7 @@ namespace osu.Game.Skinning
             return null;
         }
 
-        public override Sample GetSample(ISampleInfo sampleInfo)
+        public override SampleChannel GetSample(ISampleInfo sampleInfo)
         {
             IEnumerable<string> lookupNames;
 

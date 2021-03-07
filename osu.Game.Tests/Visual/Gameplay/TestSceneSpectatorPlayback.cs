@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Linq;
 using NUnit.Framework;
 using osu.Framework.Allocation;
@@ -28,7 +27,6 @@ using osu.Game.Rulesets;
 using osu.Game.Rulesets.Replays;
 using osu.Game.Rulesets.Replays.Types;
 using osu.Game.Rulesets.UI;
-using osu.Game.Scoring;
 using osu.Game.Screens.Play;
 using osu.Game.Tests.Visual.UserInterface;
 using osuTK;
@@ -75,8 +73,6 @@ namespace osu.Game.Tests.Visual.Gameplay
                 switch (args.Action)
                 {
                     case NotifyCollectionChangedAction.Add:
-                        Debug.Assert(args.NewItems != null);
-
                         foreach (int user in args.NewItems)
                         {
                             if (user == api.LocalUser.Value.Id)
@@ -86,8 +82,6 @@ namespace osu.Game.Tests.Visual.Gameplay
                         break;
 
                     case NotifyCollectionChangedAction.Remove:
-                        Debug.Assert(args.OldItems != null);
-
                         foreach (int user in args.OldItems)
                         {
                             if (user == api.LocalUser.Value.Id)
@@ -303,7 +297,7 @@ namespace osu.Game.Tests.Visual.Gameplay
 
             internal class TestKeyBindingContainer : KeyBindingContainer<TestAction>
             {
-                public override IEnumerable<IKeyBinding> DefaultKeyBindings => new[]
+                public override IEnumerable<KeyBinding> DefaultKeyBindings => new[]
                 {
                     new KeyBinding(InputKey.MouseLeft, TestAction.Down),
                 };
@@ -354,7 +348,7 @@ namespace osu.Game.Tests.Visual.Gameplay
         internal class TestReplayRecorder : ReplayRecorder<TestAction>
         {
             public TestReplayRecorder()
-                : base(new Score())
+                : base(new Replay())
             {
             }
 

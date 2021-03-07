@@ -12,19 +12,7 @@ using osuTK.Input;
 
 namespace osu.Game.Graphics.Containers
 {
-    public class OsuScrollContainer : OsuScrollContainer<Drawable>
-    {
-        public OsuScrollContainer()
-        {
-        }
-
-        public OsuScrollContainer(Direction direction)
-            : base(direction)
-        {
-        }
-    }
-
-    public class OsuScrollContainer<T> : ScrollContainer<T> where T : Drawable
+    public class OsuScrollContainer : ScrollContainer<Drawable>
     {
         public const float SCROLL_BAR_HEIGHT = 10;
         public const float SCROLL_BAR_PADDING = 3;

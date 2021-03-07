@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics.Containers;
@@ -21,7 +20,7 @@ namespace osu.Game.Online
         protected readonly Bindable<TModel> Model = new Bindable<TModel>();
 
         [Resolved(CanBeNull = true)]
-        protected TModelManager Manager { get; private set; }
+        private TModelManager manager { get; set; }
 
         /// <summary>
         /// Holds the current download state of the <typeparamref name="TModel"/>, whether is has already been downloaded, is in progress, or is not downloaded.
@@ -47,40 +46,21 @@ namespace osu.Game.Online
             {
                 if (modelInfo.NewValue == null)
                     attachDownload(null);
-                else if (IsModelAvailableLocally())
+                else if (manager.IsAvailableLocally(modelInfo.NewValue))
                     State.Value = DownloadState.LocallyAvailable;
                 else
-                    attachDownload(Manager?.GetExistingDownload(modelInfo.NewValue));
+                    attachDownload(manager.GetExistingDownload(modelInfo.NewValue));
             }, true);
 
-            if (Manager == null)
-                return;
-
-            managerDownloadBegan = Manager.DownloadBegan.GetBoundCopy();
+            managerDownloadBegan = manager.DownloadBegan.GetBoundCopy();
             managerDownloadBegan.BindValueChanged(downloadBegan);
-            managerDownloadFailed = Manager.DownloadFailed.GetBoundCopy();
+            managerDownloadFailed = manager.DownloadFailed.GetBoundCopy();
             managerDownloadFailed.BindValueChanged(downloadFailed);
-            managedUpdated = Manager.ItemUpdated.GetBoundCopy();
+            managedUpdated = manager.ItemUpdated.GetBoundCopy();
             managedUpdated.BindValueChanged(itemUpdated);
-            managerRemoved = Manager.ItemRemoved.GetBoundCopy();
+            managerRemoved = manager.ItemRemoved.GetBoundCopy();
             managerRemoved.BindValueChanged(itemRemoved);
         }
-
-        /// <summary>
-        /// Checks that a database model matches the one expected to be downloaded.
-        /// </summary>
-        /// <example>
-        /// For online play, this could be used to check that the databased model matches the online beatmap.
-        /// </example>
-        /// <param name="databasedModel">The model in database.</param>
-        protected virtual bool VerifyDatabasedModel([NotNull] TModel databasedModel) => true;
-
-        /// <summary>
-        /// Whether the given model is available in the database.
-        /// By default, this calls <see cref="IModelDownloader{TModel}.IsAvailableLocally"/>,
-        /// but can be overriden to add additional checks for verifying the model in database.
-        /// </summary>
-        protected virtual bool IsModelAvailableLocally() => Manager?.IsAvailableLocally(Model.Value) == true;
 
         private void downloadBegan(ValueChangedEvent<WeakReference<ArchiveDownloadRequest<TModel>>> weakRequest)
         {
@@ -123,7 +103,7 @@ namespace osu.Game.Online
             {
                 if (attachedRequest.Progress == 1)
                 {
-                    State.Value = DownloadState.Importing;
+                    State.Value = DownloadState.Downloaded;
                     Progress.Value = 1;
                 }
                 else
@@ -142,7 +122,7 @@ namespace osu.Game.Online
             }
         }
 
-        private void onRequestSuccess(string _) => Schedule(() => State.Value = DownloadState.Importing);
+        private void onRequestSuccess(string _) => Schedule(() => State.Value = DownloadState.Downloaded);
 
         private void onRequestProgress(float progress) => Schedule(() => Progress.Value = progress);
 
@@ -151,34 +131,22 @@ namespace osu.Game.Online
         private void itemUpdated(ValueChangedEvent<WeakReference<TModel>> weakItem)
         {
             if (weakItem.NewValue.TryGetTarget(out var item))
-            {
-                Schedule(() =>
-                {
-                    if (!item.Equals(Model.Value))
-                        return;
-
-                    if (!VerifyDatabasedModel(item))
-                    {
-                        State.Value = DownloadState.NotDownloaded;
-                        return;
-                    }
-
-                    State.Value = DownloadState.LocallyAvailable;
-                });
-            }
+                setDownloadStateFromManager(item, DownloadState.LocallyAvailable);
         }
 
         private void itemRemoved(ValueChangedEvent<WeakReference<TModel>> weakItem)
         {
             if (weakItem.NewValue.TryGetTarget(out var item))
-            {
-                Schedule(() =>
-                {
-                    if (item.Equals(Model.Value))
-                        State.Value = DownloadState.NotDownloaded;
-                });
-            }
+                setDownloadStateFromManager(item, DownloadState.NotDownloaded);
         }
+
+        private void setDownloadStateFromManager(TModel s, DownloadState state) => Schedule(() =>
+        {
+            if (!s.Equals(Model.Value))
+                return;
+
+            State.Value = state;
+        });
 
         #region Disposal
 

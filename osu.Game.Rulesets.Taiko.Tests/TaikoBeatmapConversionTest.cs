@@ -23,7 +23,6 @@ namespace osu.Game.Rulesets.Taiko.Tests
         [TestCase("sample-to-type-conversions")]
         [TestCase("slider-conversion-v6")]
         [TestCase("slider-conversion-v14")]
-        [TestCase("slider-generating-drumroll-2")]
         public void Test(string name) => base.Test(name);
 
         protected override IEnumerable<ConvertValue> CreateConvertValue(HitObject hitObject)
@@ -36,7 +35,7 @@ namespace osu.Game.Rulesets.Taiko.Tests
                 IsCentre = (hitObject as Hit)?.Type == HitType.Centre,
                 IsDrumRoll = hitObject is DrumRoll,
                 IsSwell = hitObject is Swell,
-                IsStrong = (hitObject as TaikoStrongableHitObject)?.IsStrong == true
+                IsStrong = ((TaikoHitObject)hitObject).IsStrong
             };
         }
 

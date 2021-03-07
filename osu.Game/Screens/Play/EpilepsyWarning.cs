@@ -24,19 +24,7 @@ namespace osu.Game.Screens.Play
             Alpha = 0f;
         }
 
-        private BackgroundScreenBeatmap dimmableBackground;
-
-        public BackgroundScreenBeatmap DimmableBackground
-        {
-            get => dimmableBackground;
-            set
-            {
-                dimmableBackground = value;
-
-                if (IsLoaded)
-                    updateBackgroundFade();
-            }
-        }
+        public BackgroundScreenBeatmap DimmableBackground { get; set; }
 
         [BackgroundDependencyLoader]
         private void load(OsuColour colours, IBindable<WorkingBeatmap> beatmap)
@@ -87,14 +75,9 @@ namespace osu.Game.Screens.Play
 
         protected override void PopIn()
         {
-            updateBackgroundFade();
+            DimmableBackground?.FadeColour(OsuColour.Gray(0.5f), FADE_DURATION, Easing.OutQuint);
 
             this.FadeIn(FADE_DURATION, Easing.OutQuint);
-        }
-
-        private void updateBackgroundFade()
-        {
-            DimmableBackground?.FadeColour(OsuColour.Gray(0.5f), FADE_DURATION, Easing.OutQuint);
         }
 
         protected override void PopOut() => this.FadeOut(FADE_DURATION);

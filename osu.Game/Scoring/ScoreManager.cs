@@ -71,9 +71,8 @@ namespace osu.Game.Scoring
             }
         }
 
-        protected override IEnumerable<string> GetStableImportPaths(Storage storage)
-            => storage.GetFiles(ImportFromStablePath).Where(p => HandledExtensions.Any(ext => Path.GetExtension(p)?.Equals(ext, StringComparison.OrdinalIgnoreCase) ?? false))
-                      .Select(path => storage.GetFullPath(path));
+        protected override IEnumerable<string> GetStableImportPaths(Storage stableStorage)
+            => stableStorage.GetFiles(ImportFromStablePath).Where(p => HandledExtensions.Any(ext => Path.GetExtension(p)?.Equals(ext, StringComparison.OrdinalIgnoreCase) ?? false));
 
         public Score GetScore(ScoreInfo score) => new LegacyDatabasedScore(score, rulesets, beatmaps(), Files.Store);
 
@@ -137,7 +136,7 @@ namespace osu.Game.Scoring
                 ScoringMode.BindValueChanged(onScoringModeChanged, true);
             }
 
-            private IBindable<StarDifficulty?> difficultyBindable;
+            private IBindable<StarDifficulty> difficultyBindable;
             private CancellationTokenSource difficultyCancellationSource;
 
             private void onScoringModeChanged(ValueChangedEvent<ScoringMode> mode)
@@ -168,11 +167,7 @@ namespace osu.Game.Scoring
 
                         // We can compute the max combo locally after the async beatmap difficulty computation.
                         difficultyBindable = difficulties().GetBindableDifficulty(score.Beatmap, score.Ruleset, score.Mods, (difficultyCancellationSource = new CancellationTokenSource()).Token);
-                        difficultyBindable.BindValueChanged(d =>
-                        {
-                            if (d.NewValue is StarDifficulty diff)
-                                updateScore(diff.MaxCombo);
-                        }, true);
+                        difficultyBindable.BindValueChanged(d => updateScore(d.NewValue.MaxCombo), true);
 
                         return;
                     }

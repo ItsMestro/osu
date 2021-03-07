@@ -50,13 +50,5 @@ namespace osu.Game.Beatmaps.ControlPoints
                && existing is EffectControlPoint existingEffect
                && KiaiMode == existingEffect.KiaiMode
                && OmitFirstBarLine == existingEffect.OmitFirstBarLine;
-
-        public override void CopyFrom(ControlPoint other)
-        {
-            KiaiMode = ((EffectControlPoint)other).KiaiMode;
-            OmitFirstBarLine = ((EffectControlPoint)other).OmitFirstBarLine;
-
-            base.CopyFrom(other);
-        }
     }
 }

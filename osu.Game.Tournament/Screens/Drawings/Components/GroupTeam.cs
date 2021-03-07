@@ -20,27 +20,27 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
             Width = 36;
             AutoSizeAxes = Axes.Y;
 
-            Flag.Anchor = Anchor.TopCentre;
-            Flag.Origin = Anchor.TopCentre;
+            Flag.Anchor = Anchor.CentreLeft;
+            Flag.Origin = Anchor.CentreLeft;
 
-            AcronymText.Anchor = Anchor.TopCentre;
-            AcronymText.Origin = Anchor.TopCentre;
+            AcronymText.Anchor = Anchor.CentreLeft;
+            AcronymText.Origin = Anchor.CentreLeft;
             AcronymText.Text = team.Acronym.Value.ToUpperInvariant();
-            AcronymText.Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 10);
-            Flag.Scale = new Vector2(0.48f);
+            AcronymText.Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 14);
+            Flag.Scale = new Vector2(0.52f);
 
             InternalChildren = new Drawable[]
             {
                 innerContainer = new FillFlowContainer
                 {
-                    Anchor = Anchor.Centre,
-                    Origin = Anchor.Centre,
+                    Anchor = Anchor.TopLeft,
+                    Origin = Anchor.TopLeft,
 
                     RelativeSizeAxes = Axes.X,
                     AutoSizeAxes = Axes.Y,
 
-                    Direction = FillDirection.Vertical,
-                    Spacing = new Vector2(0, 5f),
+                    Direction = FillDirection.Horizontal,
+                    Spacing = new Vector2(24f, 0),
 
                     Children = new Drawable[]
                     {

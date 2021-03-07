@@ -6,6 +6,7 @@ using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
+using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.ControlPoints;
 using osu.Game.Graphics.UserInterface;
 using osu.Game.Graphics.UserInterfaceV2;
@@ -23,7 +24,7 @@ namespace osu.Game.Screens.Edit.Timing
         protected Bindable<ControlPointGroup> SelectedGroup { get; private set; }
 
         [Resolved]
-        protected EditorBeatmap Beatmap { get; private set; }
+        protected IBindable<WorkingBeatmap> Beatmap { get; private set; }
 
         [Resolved]
         private EditorClock clock { get; set; }
@@ -84,13 +85,12 @@ namespace osu.Game.Screens.Edit.Timing
                 {
                     textBox.Text = string.Empty;
 
-                    // cannot use textBox.Current.Disabled due to https://github.com/ppy/osu-framework/issues/3919
-                    textBox.ReadOnly = true;
+                    textBox.Current.Disabled = true;
                     button.Enabled.Value = false;
                     return;
                 }
 
-                textBox.ReadOnly = false;
+                textBox.Current.Disabled = false;
                 button.Enabled.Value = true;
 
                 textBox.Text = $"{group.NewValue.Time:n0}";
@@ -106,13 +106,13 @@ namespace osu.Game.Screens.Edit.Timing
 
             var currentGroupItems = SelectedGroup.Value.ControlPoints.ToArray();
 
-            Beatmap.ControlPointInfo.RemoveGroup(SelectedGroup.Value);
+            Beatmap.Value.Beatmap.ControlPointInfo.RemoveGroup(SelectedGroup.Value);
 
             foreach (var cp in currentGroupItems)
-                Beatmap.ControlPointInfo.Add(time, cp);
+                Beatmap.Value.Beatmap.ControlPointInfo.Add(time, cp);
 
             // the control point might not necessarily exist yet, if currentGroupItems was empty.
-            SelectedGroup.Value = Beatmap.ControlPointInfo.GroupAt(time, true);
+            SelectedGroup.Value = Beatmap.Value.Beatmap.ControlPointInfo.GroupAt(time, true);
 
             changeHandler?.EndChange();
         }

@@ -6,16 +6,18 @@ using NUnit.Framework;
 using osu.Framework.Allocation;
 using osu.Framework.Extensions.IEnumerableExtensions;
 using osu.Framework.Graphics;
-using osu.Framework.Graphics.Containers;
 using osu.Framework.Testing;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.ControlPoints;
 using osu.Game.Configuration;
+using osu.Game.Rulesets.Catch.Beatmaps;
 using osu.Game.Rulesets.Catch.Judgements;
 using osu.Game.Rulesets.Catch.Objects;
 using osu.Game.Rulesets.Catch.Objects.Drawables;
 using osu.Game.Rulesets.Catch.UI;
+using osu.Game.Rulesets.Judgements;
 using osu.Game.Rulesets.Scoring;
+using osu.Game.Rulesets.UI;
 
 namespace osu.Game.Rulesets.Catch.Tests
 {
@@ -27,70 +29,82 @@ namespace osu.Game.Rulesets.Catch.Tests
         [Resolved]
         private OsuConfigManager config { get; set; }
 
-        private Catcher catcher => this.ChildrenOfType<Catcher>().First();
-
-        private float circleSize;
+        private Catcher catcher => this.ChildrenOfType<CatcherArea>().First().MovableCatcher;
 
         public TestSceneCatcherArea()
         {
-            AddSliderStep<float>("circle size", 0, 8, 5, createCatcher);
-            AddToggleStep("hyper dash", t => this.ChildrenOfType<TestCatcherArea>().ForEach(area => area.ToggleHyperDash(t)));
+            AddSliderStep<float>("CircleSize", 0, 8, 5, createCatcher);
+            AddToggleStep("Hyperdash", t =>
+                CreatedDrawables.OfType<CatchInputManager>().Select(i => i.Child)
+                                .OfType<TestCatcherArea>().ForEach(c => c.ToggleHyperDash(t)));
 
-            AddStep("catch fruit", () => attemptCatch(new Fruit()));
-            AddStep("catch fruit last in combo", () => attemptCatch(new Fruit { LastInCombo = true }));
-            AddStep("catch kiai fruit", () => attemptCatch(new TestSceneCatcher.TestKiaiFruit()));
-            AddStep("miss last in combo", () => attemptCatch(new Fruit { X = 100, LastInCombo = true }));
+            AddRepeatStep("catch fruit", () => catchFruit(new TestFruit(false)
+            {
+                X = catcher.X
+            }), 20);
+            AddRepeatStep("catch fruit last in combo", () => catchFruit(new TestFruit(false)
+            {
+                X = catcher.X,
+                LastInCombo = true,
+            }), 20);
+            AddRepeatStep("catch kiai fruit", () => catchFruit(new TestFruit(true)
+            {
+                X = catcher.X
+            }), 20);
+            AddRepeatStep("miss fruit", () => catchFruit(new Fruit
+            {
+                X = catcher.X + 100,
+                LastInCombo = true,
+            }, true), 20);
         }
 
-        private void attemptCatch(Fruit fruit)
+        [TestCase(true)]
+        [TestCase(false)]
+        public void TestHitLighting(bool enable)
         {
-            fruit.X = fruit.OriginalX + catcher.X;
-            fruit.ApplyDefaults(new ControlPointInfo(), new BeatmapDifficulty
-            {
-                CircleSize = circleSize
-            });
+            AddStep("create catcher", () => createCatcher(5));
 
-            foreach (var area in this.ChildrenOfType<CatcherArea>())
+            AddStep("toggle hit lighting", () => config.Set(OsuSetting.HitLighting, enable));
+            AddStep("catch fruit", () => catchFruit(new TestFruit(false)
+            {
+                X = catcher.X
+            }));
+            AddStep("catch fruit last in combo", () => catchFruit(new TestFruit(false)
+            {
+                X = catcher.X,
+                LastInCombo = true
+            }));
+            AddAssert("check hit explosion", () => catcher.ChildrenOfType<HitExplosion>().Any() == enable);
+        }
+
+        private void catchFruit(Fruit fruit, bool miss = false)
+        {
+            this.ChildrenOfType<CatcherArea>().ForEach(area =>
             {
                 DrawableFruit drawable = new DrawableFruit(fruit);
                 area.Add(drawable);
 
                 Schedule(() =>
                 {
-                    area.OnNewResult(drawable, new CatchJudgementResult(fruit, new CatchJudgement())
-                    {
-                        Type = area.MovableCatcher.CanCatch(fruit) ? HitResult.Great : HitResult.Miss
-                    });
+                    area.AttemptCatch(fruit);
+                    area.OnNewResult(drawable, new JudgementResult(fruit, new CatchJudgement()) { Type = miss ? HitResult.Miss : HitResult.Great });
 
                     drawable.Expire();
                 });
-            }
+            });
         }
 
         private void createCatcher(float size)
         {
-            circleSize = size;
-
-            SetContents(() =>
+            SetContents(() => new CatchInputManager(catchRuleset)
             {
-                var droppedObjectContainer = new Container<CaughtObject>
+                RelativeSizeAxes = Axes.Both,
+                Child = new TestCatcherArea(new BeatmapDifficulty { CircleSize = size })
                 {
-                    RelativeSizeAxes = Axes.Both
-                };
-
-                return new CatchInputManager(catchRuleset)
-                {
-                    RelativeSizeAxes = Axes.Both,
-                    Children = new Drawable[]
-                    {
-                        droppedObjectContainer,
-                        new TestCatcherArea(droppedObjectContainer, new BeatmapDifficulty { CircleSize = size })
-                        {
-                            Anchor = Anchor.Centre,
-                            Origin = Anchor.TopCentre,
-                        }
-                    }
-                };
+                    Anchor = Anchor.Centre,
+                    Origin = Anchor.TopCentre,
+                    CreateDrawableRepresentation = ((DrawableRuleset<CatchHitObject>)catchRuleset.CreateInstance().CreateDrawableRulesetWith(new CatchBeatmap())).CreateDrawableRepresentation
+                },
             });
         }
 
@@ -100,12 +114,25 @@ namespace osu.Game.Rulesets.Catch.Tests
             catchRuleset = rulesets.GetRuleset(2);
         }
 
+        public class TestFruit : Fruit
+        {
+            public TestFruit(bool kiai)
+            {
+                var kiaiCpi = new ControlPointInfo();
+                kiaiCpi.Add(0, new EffectControlPoint { KiaiMode = kiai });
+
+                ApplyDefaultsToSelf(kiaiCpi, new BeatmapDifficulty());
+            }
+        }
+
         private class TestCatcherArea : CatcherArea
         {
-            public TestCatcherArea(Container<CaughtObject> droppedObjectContainer, BeatmapDifficulty beatmapDifficulty)
-                : base(droppedObjectContainer, beatmapDifficulty)
+            public TestCatcherArea(BeatmapDifficulty beatmapDifficulty)
+                : base(beatmapDifficulty)
             {
             }
+
+            public new Catcher MovableCatcher => base.MovableCatcher;
 
             public void ToggleHyperDash(bool status) => MovableCatcher.SetHyperDashState(status ? 2 : 1);
         }

@@ -8,7 +8,6 @@ using osu.Framework.Graphics.Effects;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Input.Events;
-using osu.Framework.Localisation;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Sprites;
 using osuTK;
@@ -40,13 +39,13 @@ namespace osu.Game.Screens.Select.Options
             set => iconText.Icon = value;
         }
 
-        public LocalisableString FirstLineText
+        public string FirstLineText
         {
             get => firstLine.Text;
             set => firstLine.Text = value;
         }
 
-        public LocalisableString SecondLineText
+        public string SecondLineText
         {
             get => secondLine.Text;
             set => secondLine.Text = value;

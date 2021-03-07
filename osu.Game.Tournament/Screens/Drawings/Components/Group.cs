@@ -28,7 +28,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
         {
             GroupName = name;
 
-            Size = new Vector2(176, 128);
+            Size = new Vector2(162, 150);
 
             Masking = true;
             CornerRadius = 4;
@@ -49,20 +49,21 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                     Position = new Vector2(0, 7f),
 
                     Text = $"GROUP {name.ToUpperInvariant()}",
-                    Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 8),
+                    Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 12),
                     Colour = new Color4(255, 204, 34, 255),
                 },
                 teams = new FillFlowContainer<GroupTeam>
                 {
                     RelativeSizeAxes = Axes.Both,
 
-                    Spacing = new Vector2(6f, 22),
+                    Direction = FillDirection.Vertical,
+                    Spacing = new Vector2(30f, 16f),
 
                     Margin = new MarginPadding
                     {
-                        Top = 21f,
+                        Top = 34f,
                         Bottom = 7f,
-                        Left = 7f,
+                        Left = 24f,
                         Right = 7f
                     }
                 }

@@ -11,31 +11,30 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
-using Humanizer;
 using osu.Framework.Input.Events;
 using osu.Game.Graphics;
 
 namespace osu.Game.Overlays.Mods
 {
-    public class ModSection : CompositeDrawable
+    public abstract class ModSection : Container
     {
-        private readonly Drawable header;
+        private readonly OsuSpriteText headerLabel;
 
         public FillFlowContainer<ModButtonEmpty> ButtonsContainer { get; }
 
-        protected IReadOnlyList<ModButton> Buttons { get; private set; } = Array.Empty<ModButton>();
-
         public Action<Mod> Action;
+        protected abstract Key[] ToggleKeys { get; }
+        public abstract ModType ModType { get; }
 
-        public Key[] ToggleKeys;
+        public string Header
+        {
+            get => headerLabel.Text;
+            set => headerLabel.Text = value;
+        }
 
-        public readonly ModType ModType;
-
-        public IEnumerable<Mod> SelectedMods => Buttons.Select(b => b.SelectedMod).Where(m => m != null);
+        public IEnumerable<Mod> SelectedMods => buttons.Select(b => b.SelectedMod).Where(m => m != null);
 
         private CancellationTokenSource modsLoadCts;
-
-        protected bool SelectionAnimationRunning => pendingSelectionOperations.Count > 0;
 
         /// <summary>
         /// True when all mod icons have completed loading.
@@ -53,11 +52,7 @@ namespace osu.Game.Overlays.Mods
 
                     return new ModButton(m)
                     {
-                        SelectionChanged = mod =>
-                        {
-                            ModButtonStateChanged(mod);
-                            Action?.Invoke(mod);
-                        },
+                        SelectionChanged = Action,
                     };
                 }).ToArray();
 
@@ -66,7 +61,7 @@ namespace osu.Game.Overlays.Mods
                 if (modContainers.Length == 0)
                 {
                     ModIconsLoaded = true;
-                    header.Hide();
+                    headerLabel.Hide();
                     Hide();
                     return;
                 }
@@ -79,16 +74,14 @@ namespace osu.Game.Overlays.Mods
                     ButtonsContainer.ChildrenEnumerable = c;
                 }, (modsLoadCts = new CancellationTokenSource()).Token);
 
-                Buttons = modContainers.OfType<ModButton>().ToArray();
+                buttons = modContainers.OfType<ModButton>().ToArray();
 
-                header.FadeIn(200);
+                headerLabel.FadeIn(200);
                 this.FadeIn(200);
             }
         }
 
-        protected virtual void ModButtonStateChanged(Mod mod)
-        {
-        }
+        private ModButton[] buttons = Array.Empty<ModButton>();
 
         protected override bool OnKeyDown(KeyDownEvent e)
         {
@@ -97,130 +90,76 @@ namespace osu.Game.Overlays.Mods
             if (ToggleKeys != null)
             {
                 var index = Array.IndexOf(ToggleKeys, e.Key);
-                if (index > -1 && index < Buttons.Count)
-                    Buttons[index].SelectNext(e.ShiftPressed ? -1 : 1);
+                if (index > -1 && index < buttons.Length)
+                    buttons[index].SelectNext(e.ShiftPressed ? -1 : 1);
             }
 
             return base.OnKeyDown(e);
         }
 
-        private const double initial_multiple_selection_delay = 120;
-
-        private double selectionDelay = initial_multiple_selection_delay;
-        private double lastSelection;
-
-        private readonly Queue<Action> pendingSelectionOperations = new Queue<Action>();
-
-        protected override void Update()
-        {
-            base.Update();
-
-            if (selectionDelay == initial_multiple_selection_delay || Time.Current - lastSelection >= selectionDelay)
-            {
-                if (pendingSelectionOperations.TryDequeue(out var dequeuedAction))
-                {
-                    dequeuedAction();
-
-                    // each time we play an animation, we decrease the time until the next animation (to ramp the visual and audible elements).
-                    selectionDelay = Math.Max(30, selectionDelay * 0.8f);
-                    lastSelection = Time.Current;
-                }
-                else
-                {
-                    // reset the selection delay after all animations have been completed.
-                    // this will cause the next action to be immediately performed.
-                    selectionDelay = initial_multiple_selection_delay;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Selects all mods.
-        /// </summary>
-        public void SelectAll()
-        {
-            pendingSelectionOperations.Clear();
-
-            foreach (var button in Buttons.Where(b => !b.Selected))
-                pendingSelectionOperations.Enqueue(() => button.SelectAt(0));
-        }
-
-        /// <summary>
-        /// Deselects all mods.
-        /// </summary>
-        public void DeselectAll()
-        {
-            pendingSelectionOperations.Clear();
-            DeselectTypes(Buttons.Select(b => b.SelectedMod?.GetType()).Where(t => t != null));
-        }
+        public void DeselectAll() => DeselectTypes(buttons.Select(b => b.SelectedMod?.GetType()).Where(t => t != null));
 
         /// <summary>
         /// Deselect one or more mods in this section.
         /// </summary>
         /// <param name="modTypes">The types of <see cref="Mod"/>s which should be deselected.</param>
-        /// <param name="immediate">Whether the deselection should happen immediately. Should only be used when required to ensure correct selection flow.</param>
+        /// <param name="immediate">Set to true to bypass animations and update selections immediately.</param>
         public void DeselectTypes(IEnumerable<Type> modTypes, bool immediate = false)
         {
-            foreach (var button in Buttons)
+            int delay = 0;
+
+            foreach (var button in buttons)
             {
-                if (button.SelectedMod == null) continue;
+                Mod selected = button.SelectedMod;
+                if (selected == null) continue;
 
                 foreach (var type in modTypes)
                 {
-                    if (type.IsInstanceOfType(button.SelectedMod))
+                    if (type.IsInstanceOfType(selected))
                     {
                         if (immediate)
                             button.Deselect();
                         else
-                            pendingSelectionOperations.Enqueue(button.Deselect);
+                            Scheduler.AddDelayed(button.Deselect, delay += 50);
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Updates all buttons with the given list of selected mods.
+        /// Select one or more mods in this section and deselects all other ones.
         /// </summary>
-        /// <param name="newSelectedMods">The new list of selected mods to select.</param>
-        public void UpdateSelectedButtons(IReadOnlyList<Mod> newSelectedMods)
+        /// <param name="modTypes">The types of <see cref="Mod"/>s which should be selected.</param>
+        public void SelectTypes(IEnumerable<Type> modTypes)
         {
-            foreach (var button in Buttons)
-                updateButtonSelection(button, newSelectedMods);
-        }
-
-        private void updateButtonSelection(ModButton button, IReadOnlyList<Mod> newSelectedMods)
-        {
-            foreach (var mod in newSelectedMods)
+            foreach (var button in buttons)
             {
-                var index = Array.FindIndex(button.Mods, m1 => mod.GetType() == m1.GetType());
-                if (index < 0)
-                    continue;
+                int i = Array.FindIndex(button.Mods, m => modTypes.Any(t => t == m.GetType()));
 
-                var buttonMod = button.Mods[index];
-
-                // as this is likely coming from an external change, ensure the settings of the mod are in sync.
-                buttonMod.CopyFrom(mod);
-
-                button.SelectAt(index, false);
-                return;
+                if (i >= 0)
+                    button.SelectAt(i);
+                else
+                    button.Deselect();
             }
-
-            button.Deselect();
         }
 
-        public ModSection(ModType type)
+        protected ModSection()
         {
-            ModType = type;
-
             AutoSizeAxes = Axes.Y;
             RelativeSizeAxes = Axes.X;
 
             Origin = Anchor.TopCentre;
             Anchor = Anchor.TopCentre;
 
-            InternalChildren = new[]
+            Children = new Drawable[]
             {
-                header = CreateHeader(type.Humanize(LetterCasing.Title)),
+                headerLabel = new OsuSpriteText
+                {
+                    Origin = Anchor.TopLeft,
+                    Anchor = Anchor.TopLeft,
+                    Position = new Vector2(0f, 0f),
+                    Font = OsuFont.GetFont(weight: FontWeight.Bold)
+                },
                 ButtonsContainer = new FillFlowContainer<ModButtonEmpty>
                 {
                     AutoSizeAxes = Axes.Y,
@@ -235,21 +174,6 @@ namespace osu.Game.Overlays.Mods
                     AlwaysPresent = true
                 },
             };
-        }
-
-        protected virtual Drawable CreateHeader(string text) => new OsuSpriteText
-        {
-            Font = OsuFont.GetFont(weight: FontWeight.Bold),
-            Text = text
-        };
-
-        /// <summary>
-        /// Play out all remaining animations immediately to leave mods in a good (final) state.
-        /// </summary>
-        public void FlushAnimation()
-        {
-            while (pendingSelectionOperations.TryDequeue(out var dequeuedAction))
-                dequeuedAction();
         }
     }
 }

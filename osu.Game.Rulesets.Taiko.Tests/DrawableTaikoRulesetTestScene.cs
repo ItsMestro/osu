@@ -16,8 +16,6 @@ namespace osu.Game.Rulesets.Taiko.Tests
 {
     public abstract class DrawableTaikoRulesetTestScene : OsuTestScene
     {
-        protected const int DEFAULT_PLAYFIELD_CONTAINER_HEIGHT = 768;
-
         protected DrawableTaikoRuleset DrawableRuleset { get; private set; }
         protected Container PlayfieldContainer { get; private set; }
 
@@ -46,10 +44,10 @@ namespace osu.Game.Rulesets.Taiko.Tests
 
             Add(PlayfieldContainer = new Container
             {
-                Anchor = Anchor.TopCentre,
-                Origin = Anchor.TopCentre,
+                Anchor = Anchor.Centre,
+                Origin = Anchor.Centre,
                 RelativeSizeAxes = Axes.X,
-                Height = DEFAULT_PLAYFIELD_CONTAINER_HEIGHT,
+                Height = 768,
                 Children = new[] { DrawableRuleset = new DrawableTaikoRuleset(new TaikoRuleset(), beatmap.GetPlayableBeatmap(new TaikoRuleset().RulesetInfo)) }
             });
         }

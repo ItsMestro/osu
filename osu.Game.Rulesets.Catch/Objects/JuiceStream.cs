@@ -50,7 +50,12 @@ namespace osu.Game.Rulesets.Catch.Objects
         {
             base.CreateNestedHitObjects(cancellationToken);
 
-            var dropletSamples = Samples.Select(s => s.With(@"slidertick")).ToList();
+            var dropletSamples = Samples.Select(s => new HitSampleInfo
+            {
+                Bank = s.Bank,
+                Name = @"slidertick",
+                Volume = s.Volume
+            }).ToList();
 
             int nodeIndex = 0;
             SliderEventDescriptor? lastEvent = null;
@@ -75,7 +80,7 @@ namespace osu.Game.Rulesets.Catch.Objects
                             AddNested(new TinyDroplet
                             {
                                 StartTime = t + lastEvent.Value.Time,
-                                X = OriginalX + Path.PositionAt(
+                                X = X + Path.PositionAt(
                                     lastEvent.Value.PathProgress + (t / sinceLastTick) * (e.PathProgress - lastEvent.Value.PathProgress)).X,
                             });
                         }
@@ -93,7 +98,7 @@ namespace osu.Game.Rulesets.Catch.Objects
                         {
                             Samples = dropletSamples,
                             StartTime = e.Time,
-                            X = OriginalX + Path.PositionAt(e.PathProgress).X,
+                            X = X + Path.PositionAt(e.PathProgress).X,
                         });
                         break;
 
@@ -104,14 +109,14 @@ namespace osu.Game.Rulesets.Catch.Objects
                         {
                             Samples = this.GetNodeSamples(nodeIndex++),
                             StartTime = e.Time,
-                            X = OriginalX + Path.PositionAt(e.PathProgress).X,
+                            X = X + Path.PositionAt(e.PathProgress).X,
                         });
                         break;
                 }
             }
         }
 
-        public float EndX => OriginalX + this.CurvePositionAt(1).X;
+        public float EndX => X + this.CurvePositionAt(1).X;
 
         public double Duration
         {

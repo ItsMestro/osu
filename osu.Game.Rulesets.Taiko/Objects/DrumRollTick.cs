@@ -7,7 +7,7 @@ using osu.Game.Rulesets.Taiko.Judgements;
 
 namespace osu.Game.Rulesets.Taiko.Objects
 {
-    public class DrumRollTick : TaikoStrongableHitObject
+    public class DrumRollTick : TaikoHitObject
     {
         /// <summary>
         /// Whether this is the first (initial) tick of the slider.
@@ -28,11 +28,5 @@ namespace osu.Game.Rulesets.Taiko.Objects
         public override Judgement CreateJudgement() => new TaikoDrumRollTickJudgement();
 
         protected override HitWindows CreateHitWindows() => HitWindows.Empty;
-
-        protected override StrongNestedHitObject CreateStrongNestedHit(double startTime) => new StrongNestedHit { StartTime = startTime };
-
-        public class StrongNestedHit : StrongNestedHitObject
-        {
-        }
     }
 }

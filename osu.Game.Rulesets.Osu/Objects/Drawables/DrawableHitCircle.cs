@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
@@ -12,14 +11,14 @@ using osu.Framework.Input.Bindings;
 using osu.Game.Rulesets.Judgements;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Osu.Judgements;
-using osu.Game.Rulesets.Osu.Skinning.Default;
+using osu.Game.Rulesets.Osu.Objects.Drawables.Pieces;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Skinning;
 using osuTK;
 
 namespace osu.Game.Rulesets.Osu.Objects.Drawables
 {
-    public class DrawableHitCircle : DrawableOsuHitObject
+    public class DrawableHitCircle : DrawableOsuHitObject, IDrawableHitObjectWithProxiedApproach
     {
         public OsuAction? HitAction => HitArea.HitAction;
         protected virtual OsuSkinComponents CirclePieceComponent => OsuSkinComponents.HitCircle;
@@ -31,12 +30,7 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
         private Container scaleContainer;
         private InputManager inputManager;
 
-        public DrawableHitCircle()
-            : this(null)
-        {
-        }
-
-        public DrawableHitCircle([CanBeNull] HitCircle h = null)
+        public DrawableHitCircle(HitCircle h)
             : base(h)
         {
         }
@@ -78,10 +72,10 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
 
             Size = HitArea.DrawSize;
 
-            PositionBindable.BindValueChanged(_ => Position = HitObject.StackedPosition);
-            StackHeightBindable.BindValueChanged(_ => Position = HitObject.StackedPosition);
-            ScaleBindable.BindValueChanged(scale => scaleContainer.Scale = new Vector2(scale.NewValue));
-            AccentColour.BindValueChanged(accent => ApproachCircle.Colour = accent.NewValue);
+            PositionBindable.BindValueChanged(_ => Position = HitObject.StackedPosition, true);
+            StackHeightBindable.BindValueChanged(_ => Position = HitObject.StackedPosition, true);
+            ScaleBindable.BindValueChanged(scale => scaleContainer.Scale = new Vector2(scale.NewValue), true);
+            AccentColour.BindValueChanged(accent => ApproachCircle.Colour = accent.NewValue, true);
         }
 
         protected override void LoadComplete()
@@ -123,7 +117,7 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
                 return;
             }
 
-            var result = ResultFor(timeOffset);
+            var result = HitObject.HitWindows.ResultFor(timeOffset);
 
             if (result == HitResult.None || CheckHittable?.Invoke(this, Time.Current) == false)
             {
@@ -145,13 +139,6 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
                 circleResult.Type = result;
             });
         }
-
-        /// <summary>
-        /// Retrieves the <see cref="HitResult"/> for a time offset.
-        /// </summary>
-        /// <param name="timeOffset">The time offset.</param>
-        /// <returns>The hit result, or <see cref="HitResult.None"/> if <paramref name="timeOffset"/> doesn't result in a judgement.</returns>
-        protected virtual HitResult ResultFor(double timeOffset) => HitObject.HitWindows.ResultFor(timeOffset);
 
         protected override void UpdateInitialTransforms()
         {
@@ -187,8 +174,6 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
                     this.Delay(800).FadeOut();
                     break;
             }
-
-            Expire();
         }
 
         public Drawable ProxiedLayer => ApproachCircle;

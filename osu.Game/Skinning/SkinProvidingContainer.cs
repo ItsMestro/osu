@@ -32,8 +32,6 @@ namespace osu.Game.Skinning
 
         protected virtual bool AllowConfigurationLookup => true;
 
-        protected virtual bool AllowColourLookup => true;
-
         public SkinProvidingContainer(ISkin skin)
         {
             this.skin = skin;
@@ -59,9 +57,9 @@ namespace osu.Game.Skinning
             return fallbackSource?.GetTexture(componentName, wrapModeS, wrapModeT);
         }
 
-        public Sample GetSample(ISampleInfo sampleInfo)
+        public SampleChannel GetSample(ISampleInfo sampleInfo)
         {
-            Sample sourceChannel;
+            SampleChannel sourceChannel;
             if (AllowSampleLookup(sampleInfo) && (sourceChannel = skin?.GetSample(sampleInfo)) != null)
                 return sourceChannel;
 
@@ -70,20 +68,7 @@ namespace osu.Game.Skinning
 
         public IBindable<TValue> GetConfig<TLookup, TValue>(TLookup lookup)
         {
-            if (skin != null)
-            {
-                if (lookup is GlobalSkinColours || lookup is SkinCustomColourLookup)
-                    return lookupWithFallback<TLookup, TValue>(lookup, AllowColourLookup);
-
-                return lookupWithFallback<TLookup, TValue>(lookup, AllowConfigurationLookup);
-            }
-
-            return fallbackSource?.GetConfig<TLookup, TValue>(lookup);
-        }
-
-        private IBindable<TValue> lookupWithFallback<TLookup, TValue>(TLookup lookup, bool canUseSkinLookup)
-        {
-            if (canUseSkinLookup)
+            if (AllowConfigurationLookup && skin != null)
             {
                 var bindable = skin.GetConfig<TLookup, TValue>(lookup);
                 if (bindable != null)

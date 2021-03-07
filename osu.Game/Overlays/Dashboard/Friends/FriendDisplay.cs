@@ -5,18 +5,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using osu.Framework.Allocation;
-using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Game.Graphics.UserInterface;
 using osu.Game.Online.API;
+using osu.Game.Online.API.Requests;
 using osu.Game.Users;
 using osuTK;
 
 namespace osu.Game.Overlays.Dashboard.Friends
 {
-    public class FriendDisplay : CompositeDrawable
+    public class FriendDisplay : OverlayView<List<User>>
     {
         private List<User> users = new List<User>();
 
@@ -41,16 +41,8 @@ namespace osu.Game.Overlays.Dashboard.Friends
         private Container itemsPlaceholder;
         private LoadingLayer loading;
 
-        private readonly IBindableList<User> apiFriends = new BindableList<User>();
-
-        public FriendDisplay()
-        {
-            RelativeSizeAxes = Axes.X;
-            AutoSizeAxes = Axes.Y;
-        }
-
-        [BackgroundDependencyLoader(true)]
-        private void load(OverlayColourProvider colourProvider, IAPIProvider api)
+        [BackgroundDependencyLoader]
+        private void load(OverlayColourProvider colourProvider)
         {
             InternalChild = new FillFlowContainer
             {
@@ -128,7 +120,7 @@ namespace osu.Game.Overlays.Dashboard.Friends
                                                 AutoSizeAxes = Axes.Y,
                                                 Padding = new MarginPadding { Horizontal = 50 }
                                             },
-                                            loading = new LoadingLayer(true)
+                                            loading = new LoadingLayer(itemsPlaceholder)
                                         }
                                     }
                                 }
@@ -140,9 +132,6 @@ namespace osu.Game.Overlays.Dashboard.Friends
 
             background.Colour = colourProvider.Background4;
             controlBackground.Colour = colourProvider.Background5;
-
-            apiFriends.BindTo(api.Friends);
-            apiFriends.BindCollectionChanged((_, __) => Schedule(() => Users = apiFriends.ToList()), true);
         }
 
         protected override void LoadComplete()
@@ -152,6 +141,13 @@ namespace osu.Game.Overlays.Dashboard.Friends
             onlineStreamControl.Current.BindValueChanged(_ => recreatePanels());
             userListToolbar.DisplayStyle.BindValueChanged(_ => recreatePanels());
             userListToolbar.SortCriteria.BindValueChanged(_ => recreatePanels());
+        }
+
+        protected override APIRequest<List<User>> CreateRequest() => new GetFriendsRequest();
+
+        protected override void OnSuccess(List<User> response)
+        {
+            Users = response;
         }
 
         private void recreatePanels()

@@ -48,7 +48,6 @@ namespace osu.Game.Online.API.Requests.Responses
     public enum ChangelogEntryType
     {
         Add,
-        Fix,
-        Misc
+        Fix
     }
 }

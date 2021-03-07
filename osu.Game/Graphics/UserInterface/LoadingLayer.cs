@@ -2,9 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using JetBrains.Annotations;
 using osu.Framework.Graphics;
-using osu.Framework.Graphics.Shapes;
+using osu.Framework.Graphics.Containers;
 using osu.Framework.Input.Events;
 using osuTK;
 using osuTK.Graphics;
@@ -18,32 +17,22 @@ namespace osu.Game.Graphics.UserInterface
     /// </summary>
     public class LoadingLayer : LoadingSpinner
     {
-        [CanBeNull]
-        protected Box BackgroundDimLayer { get; }
+        private readonly Drawable dimTarget;
 
         /// <summary>
-        /// Construct a new loading spinner.
+        /// Constuct a new loading spinner.
         /// </summary>
-        /// <param name="dimBackground">Whether the full background area should be dimmed while loading.</param>
+        /// <param name="dimTarget">An optional target to dim when displayed.</param>
         /// <param name="withBox">Whether the spinner should have a surrounding black box for visibility.</param>
-        public LoadingLayer(bool dimBackground = false, bool withBox = true)
+        public LoadingLayer(Drawable dimTarget = null, bool withBox = true)
             : base(withBox)
         {
             RelativeSizeAxes = Axes.Both;
             Size = new Vector2(1);
 
-            MainContents.RelativeSizeAxes = Axes.None;
+            this.dimTarget = dimTarget;
 
-            if (dimBackground)
-            {
-                AddInternal(BackgroundDimLayer = new Box
-                {
-                    Depth = float.MaxValue,
-                    Colour = Color4.Black,
-                    Alpha = 0,
-                    RelativeSizeAxes = Axes.Both,
-                });
-            }
+            MainContents.RelativeSizeAxes = Axes.None;
         }
 
         public override bool HandleNonPositionalInput => false;
@@ -67,21 +56,31 @@ namespace osu.Game.Graphics.UserInterface
 
         protected override void PopIn()
         {
-            BackgroundDimLayer?.FadeTo(0.5f, TRANSITION_DURATION * 2, Easing.OutQuint);
+            dimTarget?.FadeColour(OsuColour.Gray(0.5f), TRANSITION_DURATION, Easing.OutQuint);
             base.PopIn();
         }
 
         protected override void PopOut()
         {
-            BackgroundDimLayer?.FadeOut(TRANSITION_DURATION, Easing.OutQuint);
+            dimTarget?.FadeColour(Color4.White, TRANSITION_DURATION, Easing.OutQuint);
             base.PopOut();
         }
 
         protected override void Update()
         {
             base.Update();
-
             MainContents.Size = new Vector2(Math.Clamp(Math.Min(DrawWidth, DrawHeight) * 0.25f, 30, 100));
+        }
+
+        protected override void Dispose(bool isDisposing)
+        {
+            base.Dispose(isDisposing);
+
+            if (State.Value == Visibility.Visible)
+            {
+                // ensure we don't leave the target in a bad state.
+                dimTarget?.FadeColour(Color4.White, TRANSITION_DURATION, Easing.OutQuint);
+            }
         }
     }
 }

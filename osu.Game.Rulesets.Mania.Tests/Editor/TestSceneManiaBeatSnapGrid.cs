@@ -96,11 +96,6 @@ namespace osu.Game.Rulesets.Mania.Tests.Editor
             throw new System.NotImplementedException();
         }
 
-        public override SnapResult SnapScreenSpacePositionToValidPosition(Vector2 screenSpacePosition)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public override float GetBeatSnapDistanceAt(double referenceTime)
         {
             throw new System.NotImplementedException();

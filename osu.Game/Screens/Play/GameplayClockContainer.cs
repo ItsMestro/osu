@@ -95,16 +95,6 @@ namespace osu.Game.Screens.Play
             localGameplayClock = new LocalGameplayClock(userOffsetClock);
 
             GameplayClock.IsPaused.BindTo(IsPaused);
-
-            IsPaused.BindValueChanged(onPauseChanged);
-        }
-
-        private void onPauseChanged(ValueChangedEvent<bool> isPaused)
-        {
-            if (isPaused.NewValue)
-                this.TransformBindableTo(pauseFreqAdjust, 0, 200, Easing.Out).OnComplete(_ => adjustableClock.Stop());
-            else
-                this.TransformBindableTo(pauseFreqAdjust, 1, 200, Easing.In);
         }
 
         private double totalOffset => userOffsetClock.Offset + platformOffsetClock.Offset;
@@ -131,9 +121,7 @@ namespace osu.Game.Screens.Play
 
                 // if a storyboard is present, it may dictate the appropriate start time by having events in negative time space.
                 // this is commonly used to display an intro before the audio track start.
-                double? firstStoryboardEvent = beatmap.Storyboard.EarliestEventTime;
-                if (firstStoryboardEvent != null)
-                    startTime = Math.Min(startTime, firstStoryboardEvent.Value);
+                startTime = Math.Min(startTime, beatmap.Storyboard.FirstEventTime);
 
                 // some beatmaps specify a current lead-in time which should be used instead of the ruleset-provided value when available.
                 // this is not available as an option in the live editor but can still be applied via .osu editing.
@@ -166,16 +154,13 @@ namespace osu.Game.Screens.Play
 
         public void Start()
         {
-            if (!adjustableClock.IsRunning)
-            {
-                // Seeking the decoupled clock to its current time ensures that its source clock will be seeked to the same time
-                // This accounts for the audio clock source potentially taking time to enter a completely stopped state
-                Seek(GameplayClock.CurrentTime);
-
-                adjustableClock.Start();
-            }
-
+            // Seeking the decoupled clock to its current time ensures that its source clock will be seeked to the same time
+            // This accounts for the audio clock source potentially taking time to enter a completely stopped state
+            Seek(GameplayClock.CurrentTime);
+            adjustableClock.Start();
             IsPaused.Value = false;
+
+            this.TransformBindableTo(pauseFreqAdjust, 1, 200, Easing.In);
         }
 
         /// <summary>
@@ -214,6 +199,8 @@ namespace osu.Game.Screens.Play
 
         public void Stop()
         {
+            this.TransformBindableTo(pauseFreqAdjust, 0, 200, Easing.Out).OnComplete(_ => adjustableClock.Stop());
+
             IsPaused.Value = true;
         }
 

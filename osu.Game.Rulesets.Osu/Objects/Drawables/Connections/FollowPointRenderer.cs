@@ -2,74 +2,53 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
-using osu.Framework.Allocation;
-using osu.Framework.Bindables;
+using System.Linq;
 using osu.Framework.Extensions;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
-using osu.Framework.Graphics.Performance;
-using osu.Framework.Graphics.Pooling;
-using osu.Game.Rulesets.Objects;
 
 namespace osu.Game.Rulesets.Osu.Objects.Drawables.Connections
 {
     /// <summary>
     /// Visualises connections between <see cref="DrawableOsuHitObject"/>s.
     /// </summary>
-    public class FollowPointRenderer : CompositeDrawable
+    public class FollowPointRenderer : LifetimeManagementContainer
     {
+        /// <summary>
+        /// All the <see cref="FollowPointConnection"/>s contained by this <see cref="FollowPointRenderer"/>.
+        /// </summary>
+        internal IReadOnlyList<FollowPointConnection> Connections => connections;
+
+        private readonly List<FollowPointConnection> connections = new List<FollowPointConnection>();
+
         public override bool RemoveCompletedTransforms => false;
 
-        public IReadOnlyList<FollowPointLifetimeEntry> Entries => lifetimeEntries;
-
-        private DrawablePool<FollowPointConnection> connectionPool;
-        private DrawablePool<FollowPoint> pointPool;
-
-        private readonly List<FollowPointLifetimeEntry> lifetimeEntries = new List<FollowPointLifetimeEntry>();
-        private readonly Dictionary<LifetimeEntry, FollowPointConnection> connectionsInUse = new Dictionary<LifetimeEntry, FollowPointConnection>();
-        private readonly Dictionary<HitObject, IBindable> startTimeMap = new Dictionary<HitObject, IBindable>();
-        private readonly LifetimeEntryManager lifetimeManager = new LifetimeEntryManager();
-
-        public FollowPointRenderer()
-        {
-            lifetimeManager.EntryBecameAlive += onEntryBecameAlive;
-            lifetimeManager.EntryBecameDead += onEntryBecameDead;
-        }
-
-        [BackgroundDependencyLoader]
-        private void load()
-        {
-            InternalChildren = new Drawable[]
-            {
-                connectionPool = new DrawablePoolNoLifetime<FollowPointConnection>(1, 200),
-                pointPool = new DrawablePoolNoLifetime<FollowPoint>(50, 1000)
-            };
-        }
-
+        /// <summary>
+        /// Adds the <see cref="FollowPoint"/>s around an <see cref="OsuHitObject"/>.
+        /// This includes <see cref="FollowPoint"/>s leading into <paramref name="hitObject"/>, and <see cref="FollowPoint"/>s exiting <paramref name="hitObject"/>.
+        /// </summary>
+        /// <param name="hitObject">The <see cref="OsuHitObject"/> to add <see cref="FollowPoint"/>s for.</param>
         public void AddFollowPoints(OsuHitObject hitObject)
+            => addConnection(new FollowPointConnection(hitObject).With(g => g.StartTime.BindValueChanged(_ => onStartTimeChanged(g))));
+
+        /// <summary>
+        /// Removes the <see cref="FollowPoint"/>s around an <see cref="OsuHitObject"/>.
+        /// This includes <see cref="FollowPoint"/>s leading into <paramref name="hitObject"/>, and <see cref="FollowPoint"/>s exiting <paramref name="hitObject"/>.
+        /// </summary>
+        /// <param name="hitObject">The <see cref="OsuHitObject"/> to remove <see cref="FollowPoint"/>s for.</param>
+        public void RemoveFollowPoints(OsuHitObject hitObject) => removeGroup(connections.Single(g => g.Start == hitObject));
+
+        /// <summary>
+        /// Adds a <see cref="FollowPointConnection"/> to this <see cref="FollowPointRenderer"/>.
+        /// </summary>
+        /// <param name="connection">The <see cref="FollowPointConnection"/> to add.</param>
+        /// <returns>The index of <paramref name="connection"/> in <see cref="connections"/>.</returns>
+        private void addConnection(FollowPointConnection connection)
         {
-            addEntry(hitObject);
-
-            var startTimeBindable = hitObject.StartTimeBindable.GetBoundCopy();
-            startTimeBindable.ValueChanged += _ => onStartTimeChanged(hitObject);
-            startTimeMap[hitObject] = startTimeBindable;
-        }
-
-        public void RemoveFollowPoints(OsuHitObject hitObject)
-        {
-            removeEntry(hitObject);
-
-            startTimeMap[hitObject].UnbindAll();
-            startTimeMap.Remove(hitObject);
-        }
-
-        private void addEntry(OsuHitObject hitObject)
-        {
-            var newEntry = new FollowPointLifetimeEntry(hitObject);
-
-            var index = lifetimeEntries.AddInPlace(newEntry, Comparer<FollowPointLifetimeEntry>.Create((e1, e2) =>
+            // Groups are sorted by their start time when added such that the index can be used to post-process other surrounding connections
+            int index = connections.AddInPlace(connection, Comparer<FollowPointConnection>.Create((g1, g2) =>
             {
-                int comp = e1.Start.StartTime.CompareTo(e2.Start.StartTime);
+                int comp = g1.StartTime.Value.CompareTo(g2.StartTime.Value);
 
                 if (comp != 0)
                     return comp;
@@ -82,19 +61,19 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables.Connections
                 return -1;
             }));
 
-            if (index < lifetimeEntries.Count - 1)
+            if (index < connections.Count - 1)
             {
                 // Update the connection's end point to the next connection's start point
                 //     h1 -> -> -> h2
                 //    connection    nextGroup
 
-                FollowPointLifetimeEntry nextEntry = lifetimeEntries[index + 1];
-                newEntry.End = nextEntry.Start;
+                FollowPointConnection nextConnection = connections[index + 1];
+                connection.End = nextConnection.Start;
             }
             else
             {
                 // The end point may be non-null during re-ordering
-                newEntry.End = null;
+                connection.End = null;
             }
 
             if (index > 0)
@@ -103,22 +82,23 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables.Connections
                 //     h1 -> -> -> h2
                 //  prevGroup    connection
 
-                FollowPointLifetimeEntry previousEntry = lifetimeEntries[index - 1];
-                previousEntry.End = newEntry.Start;
+                FollowPointConnection previousConnection = connections[index - 1];
+                previousConnection.End = connection.Start;
             }
 
-            lifetimeManager.AddEntry(newEntry);
+            AddInternal(connection);
         }
 
-        private void removeEntry(OsuHitObject hitObject)
+        /// <summary>
+        /// Removes a <see cref="FollowPointConnection"/> from this <see cref="FollowPointRenderer"/>.
+        /// </summary>
+        /// <param name="connection">The <see cref="FollowPointConnection"/> to remove.</param>
+        /// <returns>Whether <paramref name="connection"/> was removed.</returns>
+        private void removeGroup(FollowPointConnection connection)
         {
-            int index = lifetimeEntries.FindIndex(e => e.Start == hitObject);
+            RemoveInternal(connection);
 
-            var entry = lifetimeEntries[index];
-            entry.UnbindEvents();
-
-            lifetimeEntries.RemoveAt(index);
-            lifetimeManager.RemoveEntry(entry);
+            int index = connections.IndexOf(connection);
 
             if (index > 0)
             {
@@ -126,61 +106,18 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables.Connections
                 //     h1 -> -> -> h2 -> -> -> h3
                 //  prevGroup    connection       nextGroup
                 // The current connection's end point is used since there may not be a next connection
-                FollowPointLifetimeEntry previousEntry = lifetimeEntries[index - 1];
-                previousEntry.End = entry.End;
+                FollowPointConnection previousConnection = connections[index - 1];
+                previousConnection.End = connection.End;
             }
+
+            connections.Remove(connection);
         }
 
-        protected override bool CheckChildrenLife()
+        private void onStartTimeChanged(FollowPointConnection connection)
         {
-            bool anyAliveChanged = base.CheckChildrenLife();
-            anyAliveChanged |= lifetimeManager.Update(Time.Current);
-            return anyAliveChanged;
-        }
-
-        private void onEntryBecameAlive(LifetimeEntry entry)
-        {
-            var connection = connectionPool.Get(c =>
-            {
-                c.Entry = (FollowPointLifetimeEntry)entry;
-                c.Pool = pointPool;
-            });
-
-            connectionsInUse[entry] = connection;
-
-            AddInternal(connection);
-        }
-
-        private void onEntryBecameDead(LifetimeEntry entry)
-        {
-            RemoveInternal(connectionsInUse[entry]);
-            connectionsInUse.Remove(entry);
-        }
-
-        private void onStartTimeChanged(OsuHitObject hitObject)
-        {
-            removeEntry(hitObject);
-            addEntry(hitObject);
-        }
-
-        protected override void Dispose(bool isDisposing)
-        {
-            base.Dispose(isDisposing);
-
-            foreach (var entry in lifetimeEntries)
-                entry.UnbindEvents();
-            lifetimeEntries.Clear();
-        }
-
-        private class DrawablePoolNoLifetime<T> : DrawablePool<T>
-            where T : PoolableDrawable, new()
-        {
-            public override bool RemoveWhenNotAlive => false;
-
-            public DrawablePoolNoLifetime(int initialSize, int? maximumSize = null)
-                : base(initialSize, maximumSize)
-            {
-            }
+            // Naive but can be improved if performance becomes an issue
+            removeGroup(connection);
+            addConnection(connection);
         }
     }
 }

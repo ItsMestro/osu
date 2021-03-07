@@ -4,7 +4,7 @@
 using osu.Framework.Allocation;
 using osu.Framework.Graphics.Containers;
 using osu.Game.Graphics;
-using osu.Game.Rulesets.Mania.Skinning.Default;
+using osu.Game.Rulesets.Mania.Objects.Drawables.Pieces;
 
 namespace osu.Game.Rulesets.Mania.Edit.Blueprints.Components
 {

@@ -63,7 +63,7 @@ namespace osu.Game.Screens.Ranking
                         scores.Download(Model.Value);
                         break;
 
-                    case DownloadState.Importing:
+                    case DownloadState.Downloaded:
                     case DownloadState.Downloading:
                         shakeContainer.Shake();
                         break;

@@ -13,7 +13,7 @@ using osu.Framework.Allocation;
 
 namespace osu.Game.Overlays.Profile.Sections.Recent
 {
-    public class PaginatedRecentActivityContainer : PaginatedProfileSubsection<APIRecentActivity>
+    public class PaginatedRecentActivityContainer : PaginatedContainer<APIRecentActivity>
     {
         public PaginatedRecentActivityContainer(Bindable<User> user)
             : base(user, missingText: "This user hasn't done anything notable recently!")

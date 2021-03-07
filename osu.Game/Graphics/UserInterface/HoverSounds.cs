@@ -7,8 +7,9 @@ using osu.Framework.Audio;
 using osu.Framework.Audio.Sample;
 using osu.Framework.Extensions;
 using osu.Framework.Graphics;
-using osu.Game.Configuration;
-using osu.Framework.Utils;
+using osu.Framework.Graphics.Containers;
+using osu.Framework.Input.Events;
+using osu.Framework.Threading;
 
 namespace osu.Game.Graphics.UserInterface
 {
@@ -16,9 +17,14 @@ namespace osu.Game.Graphics.UserInterface
     /// Adds hover sounds to a drawable.
     /// Does not draw anything.
     /// </summary>
-    public class HoverSounds : HoverSampleDebounceComponent
+    public class HoverSounds : CompositeDrawable
     {
-        private Sample sampleHover;
+        private SampleChannel sampleHover;
+
+        /// <summary>
+        /// Length of debounce for hover sound playback, in milliseconds. Default is 50ms.
+        /// </summary>
+        public double HoverDebounceTime { get; } = 50;
 
         protected readonly HoverSampleSet SampleSet;
 
@@ -28,16 +34,24 @@ namespace osu.Game.Graphics.UserInterface
             RelativeSizeAxes = Axes.Both;
         }
 
-        [BackgroundDependencyLoader]
-        private void load(AudioManager audio, SessionStatics statics)
+        private ScheduledDelegate playDelegate;
+
+        protected override bool OnHover(HoverEvent e)
         {
-            sampleHover = audio.Samples.Get($@"UI/generic-hover{SampleSet.GetDescription()}");
+            playDelegate?.Cancel();
+
+            if (HoverDebounceTime <= 0)
+                sampleHover?.Play();
+            else
+                playDelegate = Scheduler.AddDelayed(() => sampleHover?.Play(), HoverDebounceTime);
+
+            return base.OnHover(e);
         }
 
-        public override void PlayHoverSample()
+        [BackgroundDependencyLoader]
+        private void load(AudioManager audio)
         {
-            sampleHover.Frequency.Value = 0.96 + RNG.NextDouble(0.08);
-            sampleHover.Play();
+            sampleHover = audio.Samples.Get($@"UI/generic-hover{SampleSet.GetDescription()}");
         }
     }
 
@@ -50,9 +64,6 @@ namespace osu.Game.Graphics.UserInterface
         Normal,
 
         [Description("-softer")]
-        Soft,
-
-        [Description("-toolbar")]
-        Toolbar
+        Soft
     }
 }

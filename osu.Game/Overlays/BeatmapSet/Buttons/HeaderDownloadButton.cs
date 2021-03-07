@@ -126,7 +126,7 @@ namespace osu.Game.Overlays.BeatmapSet.Buttons
                         };
                         break;
 
-                    case DownloadState.Importing:
+                    case DownloadState.Downloaded:
                         textSprites.Children = new Drawable[]
                         {
                             new OsuSpriteText

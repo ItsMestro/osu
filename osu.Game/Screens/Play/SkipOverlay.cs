@@ -133,9 +133,6 @@ namespace osu.Game.Screens.Play
             switch (action)
             {
                 case GlobalAction.SkipCutscene:
-                    if (!button.Enabled.Value)
-                        return false;
-
                     button.Click();
                     return true;
             }
@@ -230,7 +227,7 @@ namespace osu.Game.Screens.Play
             private Box background;
             private AspectContainer aspect;
 
-            private Sample sampleConfirm;
+            private SampleChannel sampleConfirm;
 
             public Button()
             {

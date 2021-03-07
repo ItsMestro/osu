@@ -2,27 +2,21 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using JetBrains.Annotations;
 using osu.Framework.Graphics;
 using osu.Game.Rulesets.Objects.Drawables;
-using osu.Game.Rulesets.Taiko.Skinning.Default;
+using osu.Game.Rulesets.Taiko.Objects.Drawables.Pieces;
 using osu.Game.Skinning;
 
 namespace osu.Game.Rulesets.Taiko.Objects.Drawables
 {
-    public class DrawableDrumRollTick : DrawableTaikoStrongableHitObject<DrumRollTick, DrumRollTick.StrongNestedHit>
+    public class DrawableDrumRollTick : DrawableTaikoHitObject<DrumRollTick>
     {
         /// <summary>
         /// The hit type corresponding to the <see cref="TaikoAction"/> that the user pressed to hit this <see cref="DrawableDrumRollTick"/>.
         /// </summary>
         public HitType JudgementType;
 
-        public DrawableDrumRollTick()
-            : this(null)
-        {
-        }
-
-        public DrawableDrumRollTick([CanBeNull] DrumRollTick tick)
+        public DrawableDrumRollTick(DrumRollTick tick)
             : base(tick)
         {
             FillMode = FillMode.Fit;
@@ -33,8 +27,6 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
             {
                 Filled = HitObject.FirstTick
             });
-
-        protected override double MaximumJudgementOffset => HitObject.HitWindow;
 
         protected override void CheckForResult(bool userTriggered, double timeOffset)
         {
@@ -67,28 +59,21 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
             return UpdateResult(true);
         }
 
-        protected override DrawableStrongNestedHit CreateStrongNestedHit(DrumRollTick.StrongNestedHit hitObject) => new StrongNestedHit(hitObject);
+        protected override DrawableStrongNestedHit CreateStrongHit(StrongHitObject hitObject) => new StrongNestedHit(hitObject, this);
 
-        public class StrongNestedHit : DrawableStrongNestedHit
+        private class StrongNestedHit : DrawableStrongNestedHit
         {
-            public new DrawableDrumRollTick ParentHitObject => (DrawableDrumRollTick)base.ParentHitObject;
-
-            public StrongNestedHit()
-                : this(null)
-            {
-            }
-
-            public StrongNestedHit([CanBeNull] DrumRollTick.StrongNestedHit nestedHit)
-                : base(nestedHit)
+            public StrongNestedHit(StrongHitObject strong, DrawableDrumRollTick tick)
+                : base(strong, tick)
             {
             }
 
             protected override void CheckForResult(bool userTriggered, double timeOffset)
             {
-                if (!ParentHitObject.Judged)
+                if (!MainObject.Judged)
                     return;
 
-                ApplyResult(r => r.Type = ParentHitObject.IsHit ? r.Judgement.MaxResult : r.Judgement.MinResult);
+                ApplyResult(r => r.Type = MainObject.IsHit ? r.Judgement.MaxResult : r.Judgement.MinResult);
             }
 
             public override bool OnPressed(TaikoAction action) => false;

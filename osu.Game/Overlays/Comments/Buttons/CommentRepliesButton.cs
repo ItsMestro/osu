@@ -6,7 +6,6 @@ using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Input.Events;
-using osu.Framework.Localisation;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Sprites;
 using osu.Game.Graphics.UserInterface;
@@ -17,7 +16,7 @@ namespace osu.Game.Overlays.Comments.Buttons
 {
     public abstract class CommentRepliesButton : CompositeDrawable
     {
-        protected LocalisableString Text
+        protected string Text
         {
             get => text.Text;
             set => text.Text = value;

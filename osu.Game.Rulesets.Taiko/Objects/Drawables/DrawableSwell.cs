@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Extensions.Color4Extensions;
 using osu.Framework.Graphics;
@@ -14,7 +13,7 @@ using osuTK.Graphics;
 using osu.Framework.Graphics.Shapes;
 using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Scoring;
-using osu.Game.Rulesets.Taiko.Skinning.Default;
+using osu.Game.Rulesets.Taiko.Objects.Drawables.Pieces;
 using osu.Game.Skinning;
 
 namespace osu.Game.Rulesets.Taiko.Objects.Drawables
@@ -36,12 +35,7 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
         private readonly CircularContainer targetRing;
         private readonly CircularContainer expandingRing;
 
-        public DrawableSwell()
-            : this(null)
-        {
-        }
-
-        public DrawableSwell([CanBeNull] Swell swell)
+        public DrawableSwell(Swell swell)
             : base(swell)
         {
             FillMode = FillMode.Fit;
@@ -129,13 +123,12 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
                 Origin = Anchor.Centre,
             });
 
-        protected override void OnFree()
+        protected override void LoadComplete()
         {
-            base.OnFree();
+            base.LoadComplete();
 
-            UnproxyContent();
-
-            lastWasCentre = null;
+            // We need to set this here because RelativeSizeAxes won't/can't set our size by default with a different RelativeChildSize
+            Width *= Parent.RelativeChildSize.X;
         }
 
         protected override void AddNestedHitObject(DrawableHitObject hitObject)
@@ -153,7 +146,7 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
         protected override void ClearNestedHitObjects()
         {
             base.ClearNestedHitObjects();
-            ticks.Clear(false);
+            ticks.Clear();
         }
 
         protected override DrawableHitObject CreateNestedHitObject(HitObject hitObject)
@@ -175,7 +168,7 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
 
                 foreach (var t in ticks)
                 {
-                    if (!t.Result.HasResult)
+                    if (!t.IsHit)
                     {
                         nextTick = t;
                         break;
@@ -215,8 +208,7 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
                         continue;
                     }
 
-                    if (!tick.Result.HasResult)
-                        tick.TriggerResult(false);
+                    tick.TriggerResult(false);
                 }
 
                 ApplyResult(r => r.Type = numHits > HitObject.RequiredHits / 2 ? HitResult.Ok : r.Judgement.MinResult);

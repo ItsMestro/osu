@@ -8,9 +8,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
+using osu.Framework.Logging;
 using osu.Game.Beatmaps;
 using osu.Game.Online.API;
 using osu.Game.Replays.Legacy;
@@ -18,7 +21,6 @@ using osu.Game.Rulesets;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Replays;
 using osu.Game.Rulesets.Replays.Types;
-using osu.Game.Scoring;
 using osu.Game.Screens.Play;
 
 namespace osu.Game.Online.Spectator
@@ -30,28 +32,23 @@ namespace osu.Game.Online.Spectator
         /// </summary>
         public const double TIME_BETWEEN_SENDS = 200;
 
-        private readonly string endpoint;
-
-        [CanBeNull]
-        private IHubClientConnector connector;
-
-        private readonly IBindable<bool> isConnected = new BindableBool();
-
-        private HubConnection connection => connector?.CurrentConnection;
+        private HubConnection connection;
 
         private readonly List<int> watchingUsers = new List<int>();
-
-        private readonly object userLock = new object();
 
         public IBindableList<int> PlayingUsers => playingUsers;
 
         private readonly BindableList<int> playingUsers = new BindableList<int>();
 
-        [CanBeNull]
-        private IBeatmap currentBeatmap;
+        private readonly IBindable<APIState> apiState = new Bindable<APIState>();
+
+        private bool isConnected;
+
+        [Resolved]
+        private IAPIProvider api { get; set; }
 
         [CanBeNull]
-        private Score currentScore;
+        private IBeatmap currentBeatmap;
 
         [Resolved]
         private IBindable<RulesetInfo> currentRuleset { get; set; }
@@ -78,54 +75,96 @@ namespace osu.Game.Online.Spectator
         /// </summary>
         public event Action<int, SpectatorState> OnUserFinishedPlaying;
 
-        public SpectatorStreamingClient(EndpointConfiguration endpoints)
+        [BackgroundDependencyLoader]
+        private void load()
         {
-            endpoint = endpoints.SpectatorEndpointUrl;
+            apiState.BindTo(api.State);
+            apiState.BindValueChanged(apiStateChanged, true);
         }
 
-        [BackgroundDependencyLoader]
-        private void load(IAPIProvider api)
+        private void apiStateChanged(ValueChangedEvent<APIState> state)
         {
-            connector = api.GetHubConnector(nameof(SpectatorStreamingClient), endpoint);
-
-            if (connector != null)
+            switch (state.NewValue)
             {
-                connector.ConfigureConnection = connection =>
-                {
-                    // until strong typed client support is added, each method must be manually bound
-                    // (see https://github.com/dotnet/aspnetcore/issues/15198)
-                    connection.On<int, SpectatorState>(nameof(ISpectatorClient.UserBeganPlaying), ((ISpectatorClient)this).UserBeganPlaying);
-                    connection.On<int, FrameDataBundle>(nameof(ISpectatorClient.UserSentFrames), ((ISpectatorClient)this).UserSentFrames);
-                    connection.On<int, SpectatorState>(nameof(ISpectatorClient.UserFinishedPlaying), ((ISpectatorClient)this).UserFinishedPlaying);
-                };
+                case APIState.Failing:
+                case APIState.Offline:
+                    connection?.StopAsync();
+                    connection = null;
+                    break;
 
-                isConnected.BindTo(connector.IsConnected);
-                isConnected.BindValueChanged(connected =>
+                case APIState.Online:
+                    Task.Run(Connect);
+                    break;
+            }
+        }
+
+        private const string endpoint = "https://spectator.ppy.sh/spectator";
+
+        protected virtual async Task Connect()
+        {
+            if (connection != null)
+                return;
+
+            connection = new HubConnectionBuilder()
+                         .WithUrl(endpoint, options =>
+                         {
+                             options.Headers.Add("Authorization", $"Bearer {api.AccessToken}");
+                         })
+                         .AddNewtonsoftJsonProtocol(options => { options.PayloadSerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore; })
+                         .Build();
+
+            // until strong typed client support is added, each method must be manually bound (see https://github.com/dotnet/aspnetcore/issues/15198)
+            connection.On<int, SpectatorState>(nameof(ISpectatorClient.UserBeganPlaying), ((ISpectatorClient)this).UserBeganPlaying);
+            connection.On<int, FrameDataBundle>(nameof(ISpectatorClient.UserSentFrames), ((ISpectatorClient)this).UserSentFrames);
+            connection.On<int, SpectatorState>(nameof(ISpectatorClient.UserFinishedPlaying), ((ISpectatorClient)this).UserFinishedPlaying);
+
+            connection.Closed += async ex =>
+            {
+                isConnected = false;
+                playingUsers.Clear();
+
+                if (ex != null)
                 {
-                    if (connected.NewValue)
+                    Logger.Log($"Spectator client lost connection: {ex}", LoggingTarget.Network);
+                    await tryUntilConnected();
+                }
+            };
+
+            await tryUntilConnected();
+
+            async Task tryUntilConnected()
+            {
+                Logger.Log("Spectator client connecting...", LoggingTarget.Network);
+
+                while (api.State.Value == APIState.Online)
+                {
+                    try
                     {
-                        // get all the users that were previously being watched
-                        int[] users;
+                        // reconnect on any failure
+                        await connection.StartAsync();
+                        Logger.Log("Spectator client connected!", LoggingTarget.Network);
 
-                        lock (userLock)
-                        {
-                            users = watchingUsers.ToArray();
-                            watchingUsers.Clear();
-                        }
+                        // success
+                        isConnected = true;
 
-                        // resubscribe to watched users.
+                        // resubscribe to watched users
+                        var users = watchingUsers.ToArray();
+                        watchingUsers.Clear();
                         foreach (var userId in users)
                             WatchUser(userId);
 
                         // re-send state in case it wasn't received
                         if (isPlaying)
                             beginPlaying();
+
+                        break;
                     }
-                    else
+                    catch (Exception e)
                     {
-                        playingUsers.Clear();
+                        Logger.Log($"Spectator client connection error: {e}", LoggingTarget.Network);
+                        await Task.Delay(5000);
                     }
-                }, true);
+                }
             }
         }
 
@@ -155,7 +194,7 @@ namespace osu.Game.Online.Spectator
             return Task.CompletedTask;
         }
 
-        public void BeginPlaying(GameplayBeatmap beatmap, Score score)
+        public void BeginPlaying(GameplayBeatmap beatmap)
         {
             if (isPlaying)
                 throw new InvalidOperationException($"Cannot invoke {nameof(BeginPlaying)} when already playing");
@@ -168,8 +207,6 @@ namespace osu.Game.Online.Spectator
             currentState.Mods = currentMods.Value.Select(m => new APIMod(m));
 
             currentBeatmap = beatmap.PlayableBeatmap;
-            currentScore = score;
-
             beginPlaying();
         }
 
@@ -177,14 +214,14 @@ namespace osu.Game.Online.Spectator
         {
             Debug.Assert(isPlaying);
 
-            if (!isConnected.Value) return;
+            if (!isConnected) return;
 
             connection.SendAsync(nameof(ISpectatorServer.BeginPlaySession), currentState);
         }
 
         public void SendFrames(FrameDataBundle data)
         {
-            if (!isConnected.Value) return;
+            if (!isConnected) return;
 
             lastSend = connection.SendAsync(nameof(ISpectatorServer.SendFrameData), data);
         }
@@ -194,36 +231,28 @@ namespace osu.Game.Online.Spectator
             isPlaying = false;
             currentBeatmap = null;
 
-            if (!isConnected.Value) return;
+            if (!isConnected) return;
 
             connection.SendAsync(nameof(ISpectatorServer.EndPlaySession), currentState);
         }
 
         public virtual void WatchUser(int userId)
         {
-            lock (userLock)
-            {
-                if (watchingUsers.Contains(userId))
-                    return;
+            if (watchingUsers.Contains(userId))
+                return;
 
-                watchingUsers.Add(userId);
+            watchingUsers.Add(userId);
 
-                if (!isConnected.Value)
-                    return;
-            }
+            if (!isConnected) return;
 
             connection.SendAsync(nameof(ISpectatorServer.StartWatchingUser), userId);
         }
 
         public void StopWatchingUser(int userId)
         {
-            lock (userLock)
-            {
-                watchingUsers.Remove(userId);
+            watchingUsers.Remove(userId);
 
-                if (!isConnected.Value)
-                    return;
-            }
+            if (!isConnected) return;
 
             connection.SendAsync(nameof(ISpectatorServer.EndWatchingUser), userId);
         }
@@ -262,9 +291,7 @@ namespace osu.Game.Online.Spectator
 
             pendingFrames.Clear();
 
-            Debug.Assert(currentScore != null);
-
-            SendFrames(new FrameDataBundle(currentScore.ScoreInfo, frames));
+            SendFrames(new FrameDataBundle(frames));
 
             lastSendTime = Time.Current;
         }

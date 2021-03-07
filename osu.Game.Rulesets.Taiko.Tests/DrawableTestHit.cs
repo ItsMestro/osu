@@ -1,6 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using osu.Framework.Allocation;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.ControlPoints;
 using osu.Game.Rulesets.Scoring;
@@ -13,15 +14,12 @@ namespace osu.Game.Rulesets.Taiko.Tests
     {
         public readonly HitResult Type;
 
-        public DrawableTestHit(Hit hit, HitResult type = HitResult.Great, bool kiai = false)
+        public DrawableTestHit(Hit hit, HitResult type = HitResult.Great)
             : base(hit)
         {
             Type = type;
 
-            var controlPoints = new ControlPointInfo();
-            controlPoints.Add(0, new EffectControlPoint { KiaiMode = kiai });
-
-            HitObject.ApplyDefaults(controlPoints, new BeatmapDifficulty());
+            HitObject.ApplyDefaults(new ControlPointInfo(), new BeatmapDifficulty());
         }
 
         protected override void UpdateInitialTransforms()
@@ -30,10 +28,9 @@ namespace osu.Game.Rulesets.Taiko.Tests
             // suppress locally to allow hiding the visuals wherever necessary.
         }
 
-        protected override void LoadComplete()
+        [BackgroundDependencyLoader]
+        private void load()
         {
-            base.LoadComplete();
-
             Result.Type = Type;
         }
 

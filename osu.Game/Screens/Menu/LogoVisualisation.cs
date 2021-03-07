@@ -11,6 +11,7 @@ using osu.Framework.Graphics.Primitives;
 using osu.Framework.Graphics.Shaders;
 using osu.Framework.Graphics.Textures;
 using osu.Game.Beatmaps;
+using osu.Game.Graphics;
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -19,14 +20,13 @@ using osu.Framework.Audio;
 using osu.Framework.Audio.Track;
 using osu.Framework.Bindables;
 using osu.Framework.Utils;
-using osu.Framework.Extensions.Color4Extensions;
 
 namespace osu.Game.Screens.Menu
 {
     /// <summary>
     /// A visualiser that reacts to music coming from beatmaps.
     /// </summary>
-    public class LogoVisualisation : Drawable
+    public class LogoVisualisation : Drawable, IHasAccentColour
     {
         private readonly IBindable<WorkingBeatmap> beatmap = new Bindable<WorkingBeatmap>();
 
@@ -66,6 +66,8 @@ namespace osu.Game.Screens.Menu
         private const float amplitude_dead_zone = 1f / bar_length;
 
         private int indexOffset;
+
+        public Color4 AccentColour { get; set; }
 
         /// <summary>
         /// The relative movement of bars based on input amplification. Defaults to 1.
@@ -174,8 +176,7 @@ namespace osu.Game.Screens.Menu
             // Assuming the logo is a circle, we don't need a second dimension.
             private float size;
 
-            private static readonly Color4 transparent_white = Color4.White.Opacity(0.2f);
-
+            private Color4 colour;
             private float[] audioData;
 
             private readonly QuadBatch<TexturedVertex2D> vertexBatch = new QuadBatch<TexturedVertex2D>(100, 10);
@@ -192,6 +193,7 @@ namespace osu.Game.Screens.Menu
                 shader = Source.shader;
                 texture = Source.texture;
                 size = Source.DrawSize.X;
+                colour = Source.AccentColour;
                 audioData = Source.frequencyAmplitudes;
             }
 
@@ -204,7 +206,7 @@ namespace osu.Game.Screens.Menu
                 Vector2 inflation = DrawInfo.MatrixInverse.ExtractScale().Xy;
 
                 ColourInfo colourInfo = DrawColourInfo.Colour;
-                colourInfo.ApplyChild(transparent_white);
+                colourInfo.ApplyChild(colour);
 
                 if (audioData != null)
                 {

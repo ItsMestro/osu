@@ -24,7 +24,6 @@ using osu.Game.Overlays.Chat.Tabs;
 using osuTK.Input;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.Textures;
-using osu.Game.Online;
 
 namespace osu.Game.Overlays
 {
@@ -119,47 +118,40 @@ namespace osu.Game.Overlays
                                 {
                                     RelativeSizeAxes = Axes.Both,
                                 },
-                                new OnlineViewContainer("Sign in to chat")
+                                currentChannelContainer = new Container<DrawableChannel>
                                 {
                                     RelativeSizeAxes = Axes.Both,
+                                    Padding = new MarginPadding
+                                    {
+                                        Bottom = textbox_height
+                                    },
+                                },
+                                new Container
+                                {
+                                    Anchor = Anchor.BottomLeft,
+                                    Origin = Anchor.BottomLeft,
+                                    RelativeSizeAxes = Axes.X,
+                                    Height = textbox_height,
+                                    Padding = new MarginPadding
+                                    {
+                                        Top = padding * 2,
+                                        Bottom = padding * 2,
+                                        Left = ChatLine.LEFT_PADDING + padding * 2,
+                                        Right = padding * 2,
+                                    },
                                     Children = new Drawable[]
                                     {
-                                        currentChannelContainer = new Container<DrawableChannel>
+                                        textbox = new FocusedTextBox
                                         {
                                             RelativeSizeAxes = Axes.Both,
-                                            Padding = new MarginPadding
-                                            {
-                                                Bottom = textbox_height
-                                            },
-                                        },
-                                        new Container
-                                        {
-                                            Anchor = Anchor.BottomLeft,
-                                            Origin = Anchor.BottomLeft,
-                                            RelativeSizeAxes = Axes.X,
-                                            Height = textbox_height,
-                                            Padding = new MarginPadding
-                                            {
-                                                Top = padding * 2,
-                                                Bottom = padding * 2,
-                                                Left = ChatLine.LEFT_PADDING + padding * 2,
-                                                Right = padding * 2,
-                                            },
-                                            Children = new Drawable[]
-                                            {
-                                                textbox = new FocusedTextBox
-                                                {
-                                                    RelativeSizeAxes = Axes.Both,
-                                                    Height = 1,
-                                                    PlaceholderText = "type your message",
-                                                    ReleaseFocusOnCommit = false,
-                                                    HoldFocus = true,
-                                                }
-                                            }
-                                        },
-                                        loading = new LoadingSpinner(),
-                                    },
-                                }
+                                            Height = 1,
+                                            PlaceholderText = "type your message",
+                                            ReleaseFocusOnCommit = false,
+                                            HoldFocus = true,
+                                        }
+                                    }
+                                },
+                                loading = new LoadingSpinner(),
                             }
                         },
                         tabsArea = new TabsArea

@@ -18,6 +18,11 @@ namespace osu.Game.Input
         Never,
 
         /// <summary>
+        /// The mouse cursor will be locked to the window bounds while in fullscreen mode.
+        /// </summary>
+        Fullscreen,
+
+        /// <summary>
         /// The mouse cursor will be locked to the window bounds during gameplay,
         /// but may otherwise move freely.
         /// </summary>

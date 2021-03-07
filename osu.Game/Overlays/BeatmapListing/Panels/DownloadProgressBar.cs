@@ -19,7 +19,7 @@ namespace osu.Game.Overlays.BeatmapListing.Panels
         public DownloadProgressBar(BeatmapSetInfo beatmapSet)
             : base(beatmapSet)
         {
-            AddInternal(progressBar = new ProgressBar(false)
+            AddInternal(progressBar = new InteractionDisabledProgressBar
             {
                 Height = 0,
                 Alpha = 0,
@@ -50,7 +50,7 @@ namespace osu.Game.Overlays.BeatmapListing.Panels
                         progressBar.ResizeHeightTo(4, 400, Easing.OutQuint);
                         break;
 
-                    case DownloadState.Importing:
+                    case DownloadState.Downloaded:
                         progressBar.FadeIn(400, Easing.OutQuint);
                         progressBar.ResizeHeightTo(4, 400, Easing.OutQuint);
 
@@ -63,6 +63,12 @@ namespace osu.Game.Overlays.BeatmapListing.Panels
                         break;
                 }
             }, true);
+        }
+
+        private class InteractionDisabledProgressBar : ProgressBar
+        {
+            public override bool HandlePositionalInput => false;
+            public override bool HandleNonPositionalInput => false;
         }
     }
 }

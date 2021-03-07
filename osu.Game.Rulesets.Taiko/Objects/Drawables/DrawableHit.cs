@@ -5,18 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using JetBrains.Annotations;
+using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Game.Audio;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Scoring;
-using osu.Game.Rulesets.Taiko.Skinning.Default;
+using osu.Game.Rulesets.Taiko.Objects.Drawables.Pieces;
 using osu.Game.Skinning;
 
 namespace osu.Game.Rulesets.Taiko.Objects.Drawables
 {
-    public class DrawableHit : DrawableTaikoStrongableHitObject<Hit, Hit.StrongNestedHit>
+    public class DrawableHit : DrawableTaikoHitObject<Hit>
     {
         /// <summary>
         /// A list of keys which can result in hits for this HitObject.
@@ -36,51 +36,29 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
 
         private bool pressHandledThisFrame;
 
-        private readonly Bindable<HitType> type = new Bindable<HitType>();
+        private readonly Bindable<HitType> type;
 
-        public DrawableHit()
-            : this(null)
-        {
-        }
-
-        public DrawableHit([CanBeNull] Hit hit)
+        public DrawableHit(Hit hit)
             : base(hit)
         {
+            type = HitObject.TypeBindable.GetBoundCopy();
             FillMode = FillMode.Fit;
+
+            updateActionsFromType();
         }
 
-        protected override void OnApply()
+        [BackgroundDependencyLoader]
+        private void load()
         {
-            type.BindTo(HitObject.TypeBindable);
             type.BindValueChanged(_ =>
             {
                 updateActionsFromType();
 
-                // will overwrite samples, should only be called on subsequent changes
-                // after the initial application.
+                // will overwrite samples, should only be called on change.
                 updateSamplesFromTypeChange();
 
                 RecreatePieces();
             });
-
-            // action update also has to happen immediately on application.
-            updateActionsFromType();
-
-            base.OnApply();
-        }
-
-        protected override void OnFree()
-        {
-            base.OnFree();
-
-            type.UnbindFrom(HitObject.TypeBindable);
-            type.UnbindEvents();
-
-            UnproxyContent();
-
-            HitActions = null;
-            HitAction = null;
-            validActionPressed = pressHandledThisFrame = false;
         }
 
         private HitSampleInfo[] getRimSamples() => HitObject.Samples.Where(s => s.Name == HitSampleInfo.HIT_CLAP || s.Name == HitSampleInfo.HIT_WHISTLE).ToArray();
@@ -101,7 +79,7 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
             if (isRimType != rimSamples.Any())
             {
                 if (isRimType)
-                    HitObject.Samples.Add(new HitSampleInfo(HitSampleInfo.HIT_CLAP));
+                    HitObject.Samples.Add(new HitSampleInfo { Name = HitSampleInfo.HIT_CLAP });
                 else
                 {
                     foreach (var sample in rimSamples)
@@ -147,7 +125,9 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
                     if (s.Name != HitSampleInfo.HIT_FINISH)
                         continue;
 
-                    corrected[i] = s.With(HitSampleInfo.HIT_WHISTLE);
+                    var sClone = s.Clone();
+                    sClone.Name = HitSampleInfo.HIT_WHISTLE;
+                    corrected[i] = sClone;
                 }
 
                 return corrected;
@@ -250,37 +230,32 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
             }
         }
 
-        protected override DrawableStrongNestedHit CreateStrongNestedHit(Hit.StrongNestedHit hitObject) => new StrongNestedHit(hitObject);
+        protected override DrawableStrongNestedHit CreateStrongHit(StrongHitObject hitObject) => new StrongNestedHit(hitObject, this);
 
-        public class StrongNestedHit : DrawableStrongNestedHit
+        private class StrongNestedHit : DrawableStrongNestedHit
         {
-            public new DrawableHit ParentHitObject => (DrawableHit)base.ParentHitObject;
-
             /// <summary>
             /// The lenience for the second key press.
             /// This does not adjust by map difficulty in ScoreV2 yet.
             /// </summary>
             private const double second_hit_window = 30;
 
-            public StrongNestedHit()
-                : this(null)
-            {
-            }
+            public new DrawableHit MainObject => (DrawableHit)base.MainObject;
 
-            public StrongNestedHit([CanBeNull] Hit.StrongNestedHit nestedHit)
-                : base(nestedHit)
+            public StrongNestedHit(StrongHitObject strong, DrawableHit hit)
+                : base(strong, hit)
             {
             }
 
             protected override void CheckForResult(bool userTriggered, double timeOffset)
             {
-                if (!ParentHitObject.Result.HasResult)
+                if (!MainObject.Result.HasResult)
                 {
                     base.CheckForResult(userTriggered, timeOffset);
                     return;
                 }
 
-                if (!ParentHitObject.Result.IsHit)
+                if (!MainObject.Result.IsHit)
                 {
                     ApplyResult(r => r.Type = r.Judgement.MinResult);
                     return;
@@ -288,27 +263,27 @@ namespace osu.Game.Rulesets.Taiko.Objects.Drawables
 
                 if (!userTriggered)
                 {
-                    if (timeOffset - ParentHitObject.Result.TimeOffset > second_hit_window)
+                    if (timeOffset - MainObject.Result.TimeOffset > second_hit_window)
                         ApplyResult(r => r.Type = r.Judgement.MinResult);
                     return;
                 }
 
-                if (Math.Abs(timeOffset - ParentHitObject.Result.TimeOffset) <= second_hit_window)
+                if (Math.Abs(timeOffset - MainObject.Result.TimeOffset) <= second_hit_window)
                     ApplyResult(r => r.Type = r.Judgement.MaxResult);
             }
 
             public override bool OnPressed(TaikoAction action)
             {
                 // Don't process actions until the main hitobject is hit
-                if (!ParentHitObject.IsHit)
+                if (!MainObject.IsHit)
                     return false;
 
                 // Don't process actions if the pressed button was released
-                if (ParentHitObject.HitAction == null)
+                if (MainObject.HitAction == null)
                     return false;
 
                 // Don't handle invalid hit action presses
-                if (!ParentHitObject.HitActions.Contains(action))
+                if (!MainObject.HitActions.Contains(action))
                     return false;
 
                 return UpdateResult(true);

@@ -9,6 +9,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Desktop",
                 "-p:GenerateFullPaths=true",
                 "-m",
@@ -23,6 +24,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Desktop",
                 "-p:Configuration=Release",
                 "-p:GenerateFullPaths=true",
@@ -38,6 +40,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Tests",
                 "-p:GenerateFullPaths=true",
                 "-m",
@@ -52,6 +55,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Tests",
                 "-p:Configuration=Release",
                 "-p:GenerateFullPaths=true",
@@ -67,6 +71,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Tournament.Tests",
                 "-p:GenerateFullPaths=true",
                 "-m",
@@ -81,6 +86,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Tournament.Tests",
                 "-p:Configuration=Release",
                 "-p:GenerateFullPaths=true",
@@ -96,6 +102,7 @@
             "command": "dotnet",
             "args": [
                 "build",
+                "--no-restore",
                 "osu.Game.Benchmarks",
                 "-p:Configuration=Release",
                 "-p:GenerateFullPaths=true",
@@ -104,6 +111,16 @@
             ],
             "group": "build",
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Restore (netcoreapp3.1)",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "restore",
+                "build/Desktop.proj"
+            ],
+            "problemMatcher": []
         }
     ]
 }

@@ -84,7 +84,7 @@ namespace osu.Game.Rulesets.Catch.Tests
 
         public float Position
         {
-            get => HitObject?.EffectiveX ?? position;
+            get => HitObject?.X ?? position;
             set => position = value;
         }
 

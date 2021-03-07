@@ -309,8 +309,8 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
 
         public class ScrollingTeam : DrawableTournamentTeam
         {
-            public const float WIDTH = 58;
-            public const float HEIGHT = 41;
+            public const float WIDTH = 80;
+            public const float HEIGHT = 55;
 
             private readonly Box outline;
 
@@ -345,7 +345,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
 
                 Flag.Anchor = Anchor.Centre;
                 Flag.Origin = Anchor.Centre;
-                Flag.Scale = new Vector2(0.7f);
+                Flag.Scale = new Vector2(0.9f);
 
                 InternalChildren = new Drawable[]
                 {

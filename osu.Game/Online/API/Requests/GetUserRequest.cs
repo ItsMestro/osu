@@ -9,14 +9,14 @@ namespace osu.Game.Online.API.Requests
     public class GetUserRequest : APIRequest<User>
     {
         private readonly long? userId;
-        public readonly RulesetInfo Ruleset;
+        private readonly RulesetInfo ruleset;
 
         public GetUserRequest(long? userId = null, RulesetInfo ruleset = null)
         {
             this.userId = userId;
-            Ruleset = ruleset;
+            this.ruleset = ruleset;
         }
 
-        protected override string Target => userId.HasValue ? $@"users/{userId}/{Ruleset?.ShortName}" : $@"me/{Ruleset?.ShortName}";
+        protected override string Target => userId.HasValue ? $@"users/{userId}/{ruleset?.ShortName}" : $@"me/{ruleset?.ShortName}";
     }
 }

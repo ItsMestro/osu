@@ -7,11 +7,11 @@ using osu.Framework.Graphics;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Osu.Objects.Drawables;
-using osu.Game.Rulesets.Osu.Skinning.Default;
+using osu.Game.Rulesets.Osu.Objects.Drawables.Pieces;
 
 namespace osu.Game.Rulesets.Osu.Mods
 {
-    public class OsuModTraceable : ModWithVisibilityAdjustment
+    internal class OsuModTraceable : ModWithVisibilityAdjustment
     {
         public override string Name => "Traceable";
         public override string Acronym => "TC";

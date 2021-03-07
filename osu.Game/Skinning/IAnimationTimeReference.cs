@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using osu.Framework.Allocation;
-using osu.Framework.Bindables;
 using osu.Framework.Graphics.OpenGL.Textures;
 using osu.Framework.Timing;
 
@@ -26,6 +25,6 @@ namespace osu.Game.Skinning
         /// <summary>
         /// The time which animations should be started from, relative to <see cref="Clock"/>.
         /// </summary>
-        Bindable<double> AnimationStartTime { get; }
+        double AnimationStartTime { get; }
     }
 }

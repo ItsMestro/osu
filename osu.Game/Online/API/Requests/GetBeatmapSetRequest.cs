@@ -7,16 +7,16 @@ namespace osu.Game.Online.API.Requests
 {
     public class GetBeatmapSetRequest : APIRequest<APIBeatmapSet>
     {
-        public readonly int ID;
-        public readonly BeatmapSetLookupType Type;
+        private readonly int id;
+        private readonly BeatmapSetLookupType type;
 
         public GetBeatmapSetRequest(int id, BeatmapSetLookupType type = BeatmapSetLookupType.SetId)
         {
-            ID = id;
-            Type = type;
+            this.id = id;
+            this.type = type;
         }
 
-        protected override string Target => Type == BeatmapSetLookupType.SetId ? $@"beatmapsets/{ID}" : $@"beatmapsets/lookup?beatmap_id={ID}";
+        protected override string Target => type == BeatmapSetLookupType.SetId ? $@"beatmapsets/{id}" : $@"beatmapsets/lookup?beatmap_id={id}";
     }
 
     public enum BeatmapSetLookupType

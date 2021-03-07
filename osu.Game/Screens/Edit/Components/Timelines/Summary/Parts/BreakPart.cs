@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using osu.Framework.Allocation;
+using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Timing;
 using osu.Game.Graphics;
 using osu.Game.Screens.Edit.Components.Timelines.Summary.Visualisations;
@@ -13,10 +14,10 @@ namespace osu.Game.Screens.Edit.Components.Timelines.Summary.Parts
     /// </summary>
     public class BreakPart : TimelinePart
     {
-        protected override void LoadBeatmap(EditorBeatmap beatmap)
+        protected override void LoadBeatmap(WorkingBeatmap beatmap)
         {
             base.LoadBeatmap(beatmap);
-            foreach (var breakPeriod in beatmap.Breaks)
+            foreach (var breakPeriod in beatmap.Beatmap.Breaks)
                 Add(new BreakVisualisation(breakPeriod));
         }
 

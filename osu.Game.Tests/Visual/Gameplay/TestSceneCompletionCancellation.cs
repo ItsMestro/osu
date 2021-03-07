@@ -10,8 +10,6 @@ using osu.Framework.Timing;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Osu.Objects;
-using osu.Game.Scoring;
-using osu.Game.Screens.Ranking;
 using osu.Game.Storyboards;
 using osuTK;
 
@@ -52,7 +50,7 @@ namespace osu.Game.Tests.Visual.Gameplay
             cancel();
             complete();
 
-            AddUntilStep("attempted to push ranking", () => ((FakeRankingPushPlayer)Player).ResultsCreated);
+            AddUntilStep("attempted to push ranking", () => ((FakeRankingPushPlayer)Player).GotoRankingInvoked);
         }
 
         /// <summary>
@@ -86,7 +84,7 @@ namespace osu.Game.Tests.Visual.Gameplay
         {
             // wait to ensure there was no attempt of pushing the results screen.
             AddWaitStep("wait", resultsDisplayWaitCount);
-            AddAssert("no attempt to push ranking", () => !((FakeRankingPushPlayer)Player).ResultsCreated);
+            AddAssert("no attempt to push ranking", () => !((FakeRankingPushPlayer)Player).GotoRankingInvoked);
         }
 
         protected override WorkingBeatmap CreateWorkingBeatmap(IBeatmap beatmap, Storyboard storyboard = null)
@@ -112,18 +110,16 @@ namespace osu.Game.Tests.Visual.Gameplay
 
         public class FakeRankingPushPlayer : TestPlayer
         {
-            public bool ResultsCreated { get; private set; }
+            public bool GotoRankingInvoked;
 
             public FakeRankingPushPlayer()
                 : base(true, true)
             {
             }
 
-            protected override ResultsScreen CreateResults(ScoreInfo score)
+            protected override void GotoRanking()
             {
-                var results = base.CreateResults(score);
-                ResultsCreated = true;
-                return results;
+                GotoRankingInvoked = true;
             }
         }
     }

@@ -60,7 +60,6 @@ namespace osu.Game.Graphics.Backgrounds
         /// <summary>
         /// Whether we want to expire triangles as they exit our draw area completely.
         /// </summary>
-        [Obsolete("Unused.")] // Can be removed 20210518
         protected virtual bool ExpireOffScreenTriangles => true;
 
         /// <summary>
@@ -87,9 +86,12 @@ namespace osu.Game.Graphics.Backgrounds
         /// </summary>
         public float Velocity = 1;
 
+        private readonly Random stableRandom;
+
+        private float nextRandom() => (float)(stableRandom?.NextDouble() ?? RNG.NextSingle());
+
         private readonly SortedList<TriangleParticle> parts = new SortedList<TriangleParticle>(Comparer<TriangleParticle>.Default);
 
-        private Random stableRandom;
         private IShader shader;
         private readonly Texture texture;
 
@@ -170,20 +172,7 @@ namespace osu.Game.Graphics.Backgrounds
             }
         }
 
-        /// <summary>
-        /// Clears and re-initialises triangles according to a given seed.
-        /// </summary>
-        /// <param name="seed">An optional seed to stabilise random positions / attributes. Note that this does not guarantee stable playback when seeking in time.</param>
-        public void Reset(int? seed = null)
-        {
-            if (seed != null)
-                stableRandom = new Random(seed.Value);
-
-            parts.Clear();
-            addTriangles(true);
-        }
-
-        protected int AimCount { get; private set; }
+        protected int AimCount;
 
         private void addTriangles(bool randomY)
         {
@@ -236,8 +225,6 @@ namespace osu.Game.Graphics.Backgrounds
                 parts[i] = newParticle;
             }
         }
-
-        private float nextRandom() => (float)(stableRandom?.NextDouble() ?? RNG.NextSingle());
 
         protected override DrawNode CreateDrawNode() => new TrianglesDrawNode(this);
 

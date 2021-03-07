@@ -44,7 +44,6 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
         private OsuColour colours { get; set; }
 
         private IBindable<Vector2> sliderPosition;
-        private IBindable<float> sliderScale;
         private IBindable<Vector2> controlPointPosition;
 
         public PathControlPointPiece(Slider slider, PathControlPoint controlPoint)
@@ -70,13 +69,13 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
                         {
                             Anchor = Anchor.Centre,
                             Origin = Anchor.Centre,
-                            Size = new Vector2(20),
+                            Size = new Vector2(10),
                         },
                         markerRing = new CircularContainer
                         {
                             Anchor = Anchor.Centre,
                             Origin = Anchor.Centre,
-                            Size = new Vector2(28),
+                            Size = new Vector2(14),
                             Masking = true,
                             BorderThickness = 2,
                             BorderColour = Color4.White,
@@ -102,9 +101,6 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
 
             controlPointPosition = ControlPoint.Position.GetBoundCopy();
             controlPointPosition.BindValueChanged(_ => updateMarkerDisplay());
-
-            sliderScale = slider.ScaleBindable.GetBoundCopy();
-            sliderScale.BindValueChanged(_ => updateMarkerDisplay());
 
             IsSelected.BindValueChanged(_ => updateMarkerDisplay());
 
@@ -147,8 +143,6 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
 
         protected override bool OnClick(ClickEvent e) => RequestSelection != null;
 
-        private Vector2 dragStartPosition;
-
         protected override bool OnDragStart(DragStartEvent e)
         {
             if (RequestSelection == null)
@@ -156,7 +150,6 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
 
             if (e.Button == MouseButton.Left)
             {
-                dragStartPosition = ControlPoint.Position.Value;
                 changeHandler?.BeginChange();
                 return true;
             }
@@ -181,7 +174,7 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
                     slider.Path.ControlPoints[i].Position.Value -= movementDelta;
             }
             else
-                ControlPoint.Position.Value = dragStartPosition + (e.MousePosition - e.MouseDownPosition);
+                ControlPoint.Position.Value += e.Delta;
         }
 
         protected override void OnDragEnd(DragEndEvent e) => changeHandler?.EndChange();
@@ -201,7 +194,6 @@ namespace osu.Game.Rulesets.Osu.Edit.Blueprints.Sliders.Components
                 colour = colour.Lighten(1);
 
             marker.Colour = colour;
-            marker.Scale = new Vector2(slider.Scale);
         }
     }
 }

@@ -1,7 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using NUnit.Framework;
+using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Game.Rulesets.Mania.Objects.Drawables;
@@ -15,8 +15,8 @@ namespace osu.Game.Rulesets.Mania.Tests.Skinning
     /// </summary>
     public abstract class ManiaHitObjectTestScene : ManiaSkinnableTestScene
     {
-        [SetUp]
-        public void SetUp() => Schedule(() =>
+        [BackgroundDependencyLoader]
+        private void load()
         {
             SetContents(() => new FillFlowContainer
             {
@@ -65,7 +65,7 @@ namespace osu.Game.Rulesets.Mania.Tests.Skinning
                     },
                 }
             });
-        });
+        }
 
         protected abstract DrawableManiaHitObject CreateHitObject();
     }

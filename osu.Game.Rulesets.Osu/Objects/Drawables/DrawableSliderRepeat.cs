@@ -3,13 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Utils;
 using osu.Game.Rulesets.Objects.Drawables;
-using osu.Game.Rulesets.Osu.Skinning.Default;
+using osu.Game.Rulesets.Osu.Objects.Drawables.Pieces;
 using osu.Game.Skinning;
 using osuTK;
 
@@ -17,12 +16,8 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
 {
     public class DrawableSliderRepeat : DrawableOsuHitObject, ITrackSnaking
     {
-        public new SliderRepeat HitObject => (SliderRepeat)base.HitObject;
-
-        [CanBeNull]
-        public Slider Slider => DrawableSlider?.HitObject;
-
-        protected DrawableSlider DrawableSlider => (DrawableSlider)ParentHitObject;
+        private readonly SliderRepeat sliderRepeat;
+        private readonly DrawableSlider drawableSlider;
 
         private double animDuration;
 
@@ -32,14 +27,11 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
 
         public override bool DisplayResult => false;
 
-        public DrawableSliderRepeat()
-            : base(null)
-        {
-        }
-
-        public DrawableSliderRepeat(SliderRepeat sliderRepeat)
+        public DrawableSliderRepeat(SliderRepeat sliderRepeat, DrawableSlider drawableSlider)
             : base(sliderRepeat)
         {
+            this.sliderRepeat = sliderRepeat;
+            this.drawableSlider = drawableSlider;
         }
 
         [BackgroundDependencyLoader]
@@ -61,25 +53,18 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
                 }
             };
 
-            ScaleBindable.BindValueChanged(scale => scaleContainer.Scale = new Vector2(scale.NewValue));
-        }
-
-        protected override void OnApply()
-        {
-            base.OnApply();
-
-            Position = HitObject.Position - DrawableSlider.Position;
+            ScaleBindable.BindValueChanged(scale => scaleContainer.Scale = new Vector2(scale.NewValue), true);
         }
 
         protected override void CheckForResult(bool userTriggered, double timeOffset)
         {
-            if (HitObject.StartTime <= Time.Current)
-                ApplyResult(r => r.Type = DrawableSlider.Tracking.Value ? r.Judgement.MaxResult : r.Judgement.MinResult);
+            if (sliderRepeat.StartTime <= Time.Current)
+                ApplyResult(r => r.Type = drawableSlider.Tracking.Value ? r.Judgement.MaxResult : r.Judgement.MinResult);
         }
 
         protected override void UpdateInitialTransforms()
         {
-            animDuration = Math.Min(300, HitObject.SpanDuration);
+            animDuration = Math.Min(300, sliderRepeat.SpanDuration);
 
             this.Animate(
                 d => d.FadeIn(animDuration),
@@ -115,8 +100,8 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
             // When the repeat is hit, the arrow should fade out on spot rather than following the slider
             if (IsHit) return;
 
-            bool isRepeatAtEnd = HitObject.RepeatIndex % 2 == 0;
-            List<Vector2> curve = ((PlaySliderBody)DrawableSlider.Body.Drawable).CurrentCurve;
+            bool isRepeatAtEnd = sliderRepeat.RepeatIndex % 2 == 0;
+            List<Vector2> curve = ((PlaySliderBody)drawableSlider.Body.Drawable).CurrentCurve;
 
             Position = isRepeatAtEnd ? end : start;
 

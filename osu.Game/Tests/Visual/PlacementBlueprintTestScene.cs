@@ -72,7 +72,7 @@ namespace osu.Game.Tests.Visual
         {
             base.Update();
 
-            currentBlueprint.UpdateTimeAndPosition(SnapForBlueprint(currentBlueprint));
+            currentBlueprint.UpdatePosition(SnapForBlueprint(currentBlueprint));
         }
 
         protected virtual SnapResult SnapForBlueprint(PlacementBlueprint blueprint) =>
@@ -85,7 +85,7 @@ namespace osu.Game.Tests.Visual
             if (drawable is PlacementBlueprint blueprint)
             {
                 blueprint.Show();
-                blueprint.UpdateTimeAndPosition(SnapForBlueprint(blueprint));
+                blueprint.UpdatePosition(SnapForBlueprint(blueprint));
             }
         }
 

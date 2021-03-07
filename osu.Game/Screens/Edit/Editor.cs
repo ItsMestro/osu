@@ -106,21 +106,6 @@ namespace osu.Game.Screens.Edit
         [BackgroundDependencyLoader]
         private void load(OsuColour colours, GameHost host, OsuConfigManager config)
         {
-            if (Beatmap.Value is DummyWorkingBeatmap)
-            {
-                isNewBeatmap = true;
-
-                var newBeatmap = beatmapManager.CreateNew(Ruleset.Value, api.LocalUser.Value);
-
-                // this is a bit haphazard, but guards against setting the lease Beatmap bindable if
-                // the editor has already been exited.
-                if (!ValidForPush)
-                    return;
-
-                // this probably shouldn't be set in the asynchronous load method, but everything following relies on it.
-                Beatmap.Value = newBeatmap;
-            }
-
             beatDivisor.Value = Beatmap.Value.BeatmapInfo.BeatDivisor;
             beatDivisor.BindValueChanged(divisor => Beatmap.Value.BeatmapInfo.BeatDivisor = divisor.NewValue);
 
@@ -137,13 +122,15 @@ namespace osu.Game.Screens.Edit
             // todo: remove caching of this and consume via editorBeatmap?
             dependencies.Cache(beatDivisor);
 
+            if (Beatmap.Value is DummyWorkingBeatmap)
+            {
+                isNewBeatmap = true;
+                Beatmap.Value = beatmapManager.CreateNew(Ruleset.Value, api.LocalUser.Value);
+            }
+
             try
             {
                 playableBeatmap = Beatmap.Value.GetPlayableBeatmap(Beatmap.Value.BeatmapInfo.Ruleset);
-
-                // clone these locally for now to avoid incurring overhead on GetPlayableBeatmap usages.
-                // eventually we will want to improve how/where this is done as there are issues with *not* cloning it in all cases.
-                playableBeatmap.ControlPointInfo = playableBeatmap.ControlPointInfo.CreateCopy();
             }
             catch (Exception e)
             {
@@ -388,9 +375,6 @@ namespace osu.Game.Screens.Edit
 
         protected override bool OnScroll(ScrollEvent e)
         {
-            if (e.ControlPressed || e.AltPressed || e.SuperPressed)
-                return false;
-
             const double precision = 1;
 
             double scrollComponent = e.ScrollDelta.X + e.ScrollDelta.Y;
@@ -457,14 +441,11 @@ namespace osu.Game.Screens.Edit
         {
             base.OnEntering(last);
 
-            ApplyToBackground(b =>
-            {
-                // todo: temporary. we want to be applying dim using the UserDimContainer eventually.
-                b.FadeColour(Color4.DarkGray, 500);
+            // todo: temporary. we want to be applying dim using the UserDimContainer eventually.
+            Background.FadeColour(Color4.DarkGray, 500);
 
-                b.EnableUserDim.Value = false;
-                b.BlurAmount.Value = 0;
-            });
+            Background.EnableUserDim.Value = false;
+            Background.BlurAmount.Value = 0;
 
             resetTrack(true);
         }
@@ -477,7 +458,7 @@ namespace osu.Game.Screens.Edit
                 if (dialogOverlay == null || dialogOverlay.CurrentDialog is PromptForSaveDialog)
                 {
                     confirmExit();
-                    return base.OnExiting(next);
+                    return false;
                 }
 
                 if (isNewBeatmap || HasUnsavedChanges)
@@ -496,10 +477,8 @@ namespace osu.Game.Screens.Edit
                 }
             }
 
-            ApplyToBackground(b => b.FadeColour(Color4.White, 500));
+            Background.FadeColour(Color4.White, 500);
             resetTrack();
-
-            Beatmap.Value = beatmapManager.GetWorkingBeatmap(Beatmap.Value.BeatmapInfo);
 
             return base.OnExiting(next);
         }

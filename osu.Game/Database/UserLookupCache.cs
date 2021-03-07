@@ -1,11 +1,11 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using osu.Framework.Allocation;
 using osu.Game.Online.API;
 using osu.Game.Online.API.Requests;
@@ -15,106 +15,103 @@ namespace osu.Game.Database
 {
     public class UserLookupCache : MemoryCachingComponent<int, User>
     {
+        private readonly HashSet<int> nextTaskIDs = new HashSet<int>();
+
         [Resolved]
         private IAPIProvider api { get; set; }
 
+        private readonly object taskAssignmentLock = new object();
+
+        private Task<List<User>> pendingRequest;
+
         /// <summary>
-        /// Perform an API lookup on the specified user, populating a <see cref="User"/> model.
+        /// Whether <see cref="pendingRequest"/> has already grabbed its IDs.
         /// </summary>
-        /// <param name="userId">The user to lookup.</param>
-        /// <param name="token">An optional cancellation token.</param>
-        /// <returns>The populated user, or null if the user does not exist or the request could not be satisfied.</returns>
-        [ItemCanBeNull]
+        private bool pendingRequestConsumedIDs;
+
         public Task<User> GetUserAsync(int userId, CancellationToken token = default) => GetAsync(userId, token);
 
         protected override async Task<User> ComputeValueAsync(int lookup, CancellationToken token = default)
-            => await queryUser(lookup);
+        {
+            var users = await getQueryTaskForUser(lookup);
+            return users.FirstOrDefault(u => u.Id == lookup);
+        }
 
-        private readonly Queue<(int id, TaskCompletionSource<User>)> pendingUserTasks = new Queue<(int, TaskCompletionSource<User>)>();
-        private Task pendingRequestTask;
-        private readonly object taskAssignmentLock = new object();
-
-        private Task<User> queryUser(int userId)
+        /// <summary>
+        /// Return the task responsible for fetching the provided user.
+        /// This may be part of a larger batch lookup to reduce web requests.
+        /// </summary>
+        /// <param name="userId">The user to lookup.</param>
+        /// <returns>The task responsible for the lookup.</returns>
+        private Task<List<User>> getQueryTaskForUser(int userId)
         {
             lock (taskAssignmentLock)
             {
-                var tcs = new TaskCompletionSource<User>();
+                nextTaskIDs.Add(userId);
 
-                // Add to the queue.
-                pendingUserTasks.Enqueue((userId, tcs));
+                // if there's a pending request which hasn't been started yet (and is not yet full), we can wait on it.
+                if (pendingRequest != null && !pendingRequestConsumedIDs && nextTaskIDs.Count < 50)
+                    return pendingRequest;
 
-                // Create a request task if there's not already one.
-                if (pendingRequestTask == null)
-                    createNewTask();
+                return queueNextTask(nextLookup);
+            }
 
-                return tcs.Task;
+            List<User> nextLookup()
+            {
+                int[] lookupItems;
+
+                lock (taskAssignmentLock)
+                {
+                    pendingRequestConsumedIDs = true;
+                    lookupItems = nextTaskIDs.ToArray();
+                    nextTaskIDs.Clear();
+
+                    if (lookupItems.Length == 0)
+                    {
+                        queueNextTask(null);
+                        return new List<User>();
+                    }
+                }
+
+                var request = new GetUsersRequest(lookupItems);
+
+                // rather than queueing, we maintain our own single-threaded request stream.
+                api.Perform(request);
+
+                return request.Result?.Users;
             }
         }
 
-        private void performLookup()
+        /// <summary>
+        /// Queues new work at the end of the current work tasks.
+        /// Ensures the provided work is eventually run.
+        /// </summary>
+        /// <param name="work">The work to run. Can be null to signify the end of available work.</param>
+        /// <returns>The task tracking this work.</returns>
+        private Task<List<User>> queueNextTask(Func<List<User>> work)
         {
-            // contains at most 50 unique user IDs from userTasks, which is used to perform the lookup.
-            var userTasks = new Dictionary<int, List<TaskCompletionSource<User>>>();
-
-            // Grab at most 50 unique user IDs from the queue.
             lock (taskAssignmentLock)
             {
-                while (pendingUserTasks.Count > 0 && userTasks.Count < 50)
+                if (work == null)
                 {
-                    (int id, TaskCompletionSource<User> task) next = pendingUserTasks.Dequeue();
-
-                    // Perform a secondary check for existence, in case the user was queried in a previous batch.
-                    if (CheckExists(next.id, out var existing))
-                        next.task.SetResult(existing);
-                    else
-                    {
-                        if (userTasks.TryGetValue(next.id, out var tasks))
-                            tasks.Add(next.task);
-                        else
-                            userTasks[next.id] = new List<TaskCompletionSource<User>> { next.task };
-                    }
+                    pendingRequest = null;
+                    pendingRequestConsumedIDs = false;
                 }
-            }
-
-            // Query the users.
-            var request = new GetUsersRequest(userTasks.Keys.ToArray());
-
-            // rather than queueing, we maintain our own single-threaded request stream.
-            // todo: we probably want retry logic here.
-            api.Perform(request);
-
-            // Create a new request task if there's still more users to query.
-            lock (taskAssignmentLock)
-            {
-                pendingRequestTask = null;
-                if (pendingUserTasks.Count > 0)
-                    createNewTask();
-            }
-
-            List<User> foundUsers = request.Result?.Users;
-
-            if (foundUsers != null)
-            {
-                foreach (var user in foundUsers)
+                else if (pendingRequest == null)
                 {
-                    if (userTasks.TryGetValue(user.Id, out var tasks))
-                    {
-                        foreach (var task in tasks)
-                            task.SetResult(user);
-
-                        userTasks.Remove(user.Id);
-                    }
+                    // special case for the first request ever.
+                    pendingRequest = Task.Run(work);
+                    pendingRequestConsumedIDs = false;
                 }
-            }
+                else
+                {
+                    // append the new request on to the last to be executed.
+                    pendingRequest = pendingRequest.ContinueWith(_ => work());
+                    pendingRequestConsumedIDs = false;
+                }
 
-            // if any tasks remain which were not satisfied, return null.
-            foreach (var tasks in userTasks.Values)
-            {
-                foreach (var task in tasks)
-                    task.SetResult(null);
+                return pendingRequest;
             }
         }
-
-        private void createNewTask() => pendingRequestTask = Task.Run(performLookup);
     }
 }

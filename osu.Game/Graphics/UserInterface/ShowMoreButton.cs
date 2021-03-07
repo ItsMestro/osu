@@ -11,7 +11,6 @@ using osu.Game.Graphics.Sprites;
 using osu.Game.Overlays;
 using osuTK;
 using System.Collections.Generic;
-using osu.Framework.Localisation;
 
 namespace osu.Game.Graphics.UserInterface
 {
@@ -19,7 +18,7 @@ namespace osu.Game.Graphics.UserInterface
     {
         private const int duration = 200;
 
-        public LocalisableString Text
+        public string Text
         {
             get => text.Text;
             set => text.Text = value;

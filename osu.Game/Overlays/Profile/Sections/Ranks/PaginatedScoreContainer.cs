@@ -14,7 +14,7 @@ using osu.Framework.Allocation;
 
 namespace osu.Game.Overlays.Profile.Sections.Ranks
 {
-    public class PaginatedScoreContainer : PaginatedProfileSubsection<APILegacyScoreInfo>
+    public class PaginatedScoreContainer : PaginatedContainer<APILegacyScoreInfo>
     {
         private readonly ScoreType type;
 
@@ -46,9 +46,6 @@ namespace osu.Game.Overlays.Profile.Sections.Ranks
 
         protected override void OnItemsReceived(List<APILegacyScoreInfo> items)
         {
-            if (VisiblePages == 0)
-                drawableItemIndex = 0;
-
             base.OnItemsReceived(items);
 
             if (type == ScoreType.Recent)
@@ -58,8 +55,6 @@ namespace osu.Game.Overlays.Profile.Sections.Ranks
         protected override APIRequest<List<APILegacyScoreInfo>> CreateRequest() =>
             new GetUserScoresRequest(User.Value.Id, type, VisiblePages++, ItemsPerPage);
 
-        private int drawableItemIndex;
-
         protected override Drawable CreateDrawableItem(APILegacyScoreInfo model)
         {
             switch (type)
@@ -68,7 +63,7 @@ namespace osu.Game.Overlays.Profile.Sections.Ranks
                     return new DrawableProfileScore(model.CreateScoreInfo(Rulesets));
 
                 case ScoreType.Best:
-                    return new DrawableProfileWeightedScore(model.CreateScoreInfo(Rulesets), Math.Pow(0.95, drawableItemIndex++));
+                    return new DrawableProfileWeightedScore(model.CreateScoreInfo(Rulesets), Math.Pow(0.95, ItemsContainer.Count));
             }
         }
     }

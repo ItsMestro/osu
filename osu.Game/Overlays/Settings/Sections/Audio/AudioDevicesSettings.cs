@@ -6,7 +6,6 @@ using osu.Framework.Audio;
 using osu.Framework.Graphics;
 using System.Collections.Generic;
 using System.Linq;
-using osu.Framework.Localisation;
 using osu.Game.Graphics.UserInterface;
 
 namespace osu.Game.Overlays.Settings.Sections.Audio
@@ -77,7 +76,7 @@ namespace osu.Game.Overlays.Settings.Sections.Audio
 
             private class AudioDeviceDropdownControl : DropdownControl
             {
-                protected override LocalisableString GenerateItemText(string item)
+                protected override string GenerateItemText(string item)
                     => string.IsNullOrEmpty(item) ? "Default" : base.GenerateItemText(item);
             }
         }

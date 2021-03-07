@@ -119,11 +119,7 @@ namespace osu.Game.Graphics.UserInterface
 
         protected float GetYPosition(float value)
         {
-            if (ActualMaxValue == ActualMinValue)
-                // show line at top if the only value on the graph is positive,
-                // and at bottom if the only value on the graph is zero or negative.
-                // just kind of makes most sense intuitively.
-                return value > 1 ? 0 : 1;
+            if (ActualMaxValue == ActualMinValue) return 0;
 
             return (ActualMaxValue - value) / (ActualMaxValue - ActualMinValue);
         }

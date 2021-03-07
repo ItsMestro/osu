@@ -1,7 +1,6 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
 using System.Linq;
 using osu.Framework.Allocation;
 using osu.Framework.Graphics;
@@ -10,7 +9,6 @@ using osu.Game.Beatmaps.ControlPoints;
 using osu.Game.Graphics;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Judgements;
-using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.UI;
 using osu.Game.Rulesets.UI.Scrolling;
@@ -39,14 +37,9 @@ namespace osu.Game.Rulesets.Taiko.UI
         private SkinnableDrawable mascot;
 
         private ProxyContainer topLevelHitContainer;
+        private ProxyContainer barlineContainer;
         private Container rightArea;
         private Container leftArea;
-
-        /// <remarks>
-        /// <see cref="Playfield.AddNested"/> is purposefully not called on this to prevent i.e. being able to interact
-        /// with bar lines in the editor.
-        /// </remarks>
-        private BarLinePlayfield barLinePlayfield;
 
         private Container hitTargetOffsetContent;
 
@@ -90,7 +83,10 @@ namespace osu.Game.Rulesets.Taiko.UI
                             RelativeSizeAxes = Axes.Both,
                             Children = new Drawable[]
                             {
-                                barLinePlayfield = new BarLinePlayfield(),
+                                barlineContainer = new ProxyContainer
+                                {
+                                    RelativeSizeAxes = Axes.Both,
+                                },
                                 new Container
                                 {
                                     Name = "Hit objects",
@@ -147,32 +143,6 @@ namespace osu.Game.Rulesets.Taiko.UI
                 },
                 drumRollHitContainer.CreateProxy(),
             };
-
-            RegisterPool<Hit, DrawableHit>(50);
-            RegisterPool<Hit.StrongNestedHit, DrawableHit.StrongNestedHit>(50);
-
-            RegisterPool<DrumRoll, DrawableDrumRoll>(5);
-            RegisterPool<DrumRoll.StrongNestedHit, DrawableDrumRoll.StrongNestedHit>(5);
-
-            RegisterPool<DrumRollTick, DrawableDrumRollTick>(100);
-            RegisterPool<DrumRollTick.StrongNestedHit, DrawableDrumRollTick.StrongNestedHit>(100);
-
-            RegisterPool<Swell, DrawableSwell>(5);
-            RegisterPool<SwellTick, DrawableSwellTick>(100);
-        }
-
-        protected override void LoadComplete()
-        {
-            base.LoadComplete();
-            NewResult += OnNewResult;
-        }
-
-        protected override void OnNewDrawableHitObject(DrawableHitObject drawableHitObject)
-        {
-            base.OnNewDrawableHitObject(drawableHitObject);
-
-            var taikoObject = (DrawableTaikoHitObject)drawableHitObject;
-            topLevelHitContainer.Add(taikoObject.CreateProxiedContent());
         }
 
         protected override void Update()
@@ -187,77 +157,22 @@ namespace osu.Game.Rulesets.Taiko.UI
             mascot.Scale = new Vector2(DrawHeight / DEFAULT_HEIGHT);
         }
 
-        #region Pooling support
-
-        public override void Add(HitObject h)
-        {
-            switch (h)
-            {
-                case BarLine barLine:
-                    barLinePlayfield.Add(barLine);
-                    break;
-
-                case TaikoHitObject taikoHitObject:
-                    base.Add(taikoHitObject);
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unsupported {nameof(HitObject)} type: {h.GetType()}");
-            }
-        }
-
-        public override bool Remove(HitObject h)
-        {
-            switch (h)
-            {
-                case BarLine barLine:
-                    return barLinePlayfield.Remove(barLine);
-
-                case TaikoHitObject taikoHitObject:
-                    return base.Remove(taikoHitObject);
-
-                default:
-                    throw new ArgumentException($"Unsupported {nameof(HitObject)} type: {h.GetType()}");
-            }
-        }
-
-        #endregion
-
-        #region Non-pooling support
-
         public override void Add(DrawableHitObject h)
         {
+            h.OnNewResult += OnNewResult;
+            base.Add(h);
+
             switch (h)
             {
-                case DrawableBarLine barLine:
-                    barLinePlayfield.Add(barLine);
+                case DrawableBarLine barline:
+                    barlineContainer.Add(barline.CreateProxy());
                     break;
 
-                case DrawableTaikoHitObject _:
-                    base.Add(h);
+                case DrawableTaikoHitObject taikoObject:
+                    topLevelHitContainer.Add(taikoObject.CreateProxiedContent());
                     break;
-
-                default:
-                    throw new ArgumentException($"Unsupported {nameof(DrawableHitObject)} type: {h.GetType()}");
             }
         }
-
-        public override bool Remove(DrawableHitObject h)
-        {
-            switch (h)
-            {
-                case DrawableBarLine barLine:
-                    return barLinePlayfield.Remove(barLine);
-
-                case DrawableTaikoHitObject _:
-                    return base.Remove(h);
-
-                default:
-                    throw new ArgumentException($"Unsupported {nameof(DrawableHitObject)} type: {h.GetType()}");
-            }
-        }
-
-        #endregion
 
         internal void OnNewResult(DrawableHitObject judgedObject, JudgementResult result)
         {
@@ -270,7 +185,7 @@ namespace osu.Game.Rulesets.Taiko.UI
             {
                 case TaikoStrongJudgement _:
                     if (result.IsHit)
-                        hitExplosionContainer.Children.FirstOrDefault(e => e.JudgedObject == ((DrawableStrongNestedHit)judgedObject).ParentHitObject)?.VisualiseSecondHit();
+                        hitExplosionContainer.Children.FirstOrDefault(e => e.JudgedObject == ((DrawableStrongNestedHit)judgedObject).MainObject)?.VisualiseSecondHit();
                     break;
 
                 case TaikoDrumRollTickJudgement _:

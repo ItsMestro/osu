@@ -10,7 +10,6 @@ using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Input.Events;
-using osu.Framework.Localisation;
 using osu.Game.Graphics.Sprites;
 using osu.Game.Graphics.Containers;
 
@@ -22,9 +21,9 @@ namespace osu.Game.Screens.Select
 
         protected static readonly Vector2 SHEAR = new Vector2(SHEAR_WIDTH / Footer.HEIGHT, 0);
 
-        public LocalisableString Text
+        public string Text
         {
-            get => SpriteText?.Text ?? default;
+            get => SpriteText?.Text;
             set
             {
                 if (SpriteText != null)

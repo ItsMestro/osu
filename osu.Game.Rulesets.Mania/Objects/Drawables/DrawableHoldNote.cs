@@ -4,9 +4,9 @@
 using System;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
+using osu.Game.Rulesets.Mania.Objects.Drawables.Pieces;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Input.Bindings;
-using osu.Game.Rulesets.Mania.Skinning.Default;
 using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.Scoring;
@@ -51,9 +51,9 @@ namespace osu.Game.Rulesets.Mania.Objects.Drawables
         public double? HoldStartTime { get; private set; }
 
         /// <summary>
-        /// Time at which the hold note has been broken, i.e. released too early, resulting in a reduced score.
+        /// Whether the hold note has been released too early and shouldn't give full score for the release.
         /// </summary>
-        public double? HoldBrokenTime { get; private set; }
+        public bool HasBroken { get; private set; }
 
         /// <summary>
         /// Whether the hold note has been released potentially without having caused a break.
@@ -238,7 +238,7 @@ namespace osu.Game.Rulesets.Mania.Objects.Drawables
             }
 
             if (Tail.Judged && !Tail.IsHit)
-                HoldBrokenTime = Time.Current;
+                HasBroken = true;
         }
 
         public bool OnPressed(ManiaAction action)
@@ -247,10 +247,6 @@ namespace osu.Game.Rulesets.Mania.Objects.Drawables
                 return false;
 
             if (action != Action.Value)
-                return false;
-
-            // do not run any of this logic when rewinding, as it inverts order of presses/releases.
-            if (Time.Elapsed < 0)
                 return false;
 
             if (CheckHittable?.Invoke(this, Time.Current) == false)
@@ -285,10 +281,6 @@ namespace osu.Game.Rulesets.Mania.Objects.Drawables
             if (action != Action.Value)
                 return;
 
-            // do not run any of this logic when rewinding, as it inverts order of presses/releases.
-            if (Time.Elapsed < 0)
-                return;
-
             // Make sure a hold was started
             if (HoldStartTime == null)
                 return;
@@ -298,7 +290,7 @@ namespace osu.Game.Rulesets.Mania.Objects.Drawables
 
             // If the key has been released too early, the user should not receive full score for the release
             if (!Tail.IsHit)
-                HoldBrokenTime = Time.Current;
+                HasBroken = true;
 
             releaseTime = Time.Current;
         }
