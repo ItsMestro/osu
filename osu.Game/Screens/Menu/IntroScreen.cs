@@ -48,7 +48,7 @@ namespace osu.Game.Screens.Menu
 
         private const int exit_delay = 3000;
 
-        private Sample seeya;
+        private SampleChannel seeya;
 
         protected virtual string SeeyaSampleName => "Intro/seeya";
 
@@ -111,10 +111,12 @@ namespace osu.Game.Screens.Menu
             {
                 setInfo = beatmaps.QueryBeatmapSet(b => b.Hash == BeatmapHash);
 
-                if (setInfo == null)
-                    return false;
+                if (setInfo != null)
+                {
+                    initialBeatmap = beatmaps.GetWorkingBeatmap(setInfo.Beatmaps[0]);
+                }
 
-                return (initialBeatmap = beatmaps.GetWorkingBeatmap(setInfo.Beatmaps[0])) != null;
+                return UsingThemedIntro;
             }
         }
 
@@ -168,7 +170,7 @@ namespace osu.Game.Screens.Menu
         {
             // Only start the current track if it is the menu music. A beatmap's track is started when entering the Main Menu.
             if (UsingThemedIntro)
-                Track.Start();
+                Track.Restart();
         }
 
         protected override void LogoArriving(OsuLogo logo, bool resuming)

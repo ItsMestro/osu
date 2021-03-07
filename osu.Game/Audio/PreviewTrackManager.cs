@@ -27,8 +27,6 @@ namespace osu.Game.Audio
 
         protected TrackManagerPreviewTrack CurrentTrack;
 
-        private readonly BindableNumber<double> globalTrackVolumeAdjust = new BindableNumber<double>(OsuGameBase.GLOBAL_TRACK_VOLUME_ADJUST);
-
         [BackgroundDependencyLoader]
         private void load()
         {
@@ -37,7 +35,6 @@ namespace osu.Game.Audio
             trackStore = new PreviewTrackStore(new OnlineStore());
 
             audio.AddItem(trackStore);
-            trackStore.AddAdjustment(AdjustableProperty.Volume, globalTrackVolumeAdjust);
             trackStore.AddAdjustment(AdjustableProperty.Volume, audio.VolumeTrack);
         }
 

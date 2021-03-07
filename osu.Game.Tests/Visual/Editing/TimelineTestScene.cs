@@ -23,24 +23,22 @@ namespace osu.Game.Tests.Visual.Editing
 
         protected HitObjectComposer Composer { get; private set; }
 
-        protected EditorBeatmap EditorBeatmap { get; private set; }
-
         [BackgroundDependencyLoader]
         private void load(AudioManager audio)
         {
             Beatmap.Value = new WaveformTestBeatmap(audio);
 
             var playable = Beatmap.Value.GetPlayableBeatmap(Beatmap.Value.BeatmapInfo.Ruleset);
-            EditorBeatmap = new EditorBeatmap(playable);
+            var editorBeatmap = new EditorBeatmap(playable);
 
-            Dependencies.Cache(EditorBeatmap);
-            Dependencies.CacheAs<IBeatSnapProvider>(EditorBeatmap);
+            Dependencies.Cache(editorBeatmap);
+            Dependencies.CacheAs<IBeatSnapProvider>(editorBeatmap);
 
             Composer = playable.BeatmapInfo.Ruleset.CreateInstance().CreateHitObjectComposer().With(d => d.Alpha = 0);
 
             AddRange(new Drawable[]
             {
-                EditorBeatmap,
+                editorBeatmap,
                 Composer,
                 new FillFlowContainer
                 {

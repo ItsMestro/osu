@@ -8,7 +8,6 @@ using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Sprites;
-using osu.Framework.Localisation;
 using osu.Framework.Logging;
 using osu.Game.Configuration;
 using osu.Game.Graphics.UserInterface;
@@ -109,7 +108,7 @@ namespace osu.Game.Overlays.Settings.Sections
             if (skinDropdown.Items.All(s => s.ID != configBindable.Value))
                 configBindable.Value = 0;
 
-            configBindable.BindValueChanged(id => Scheduler.AddOnce(updateSelectedSkinFromConfig), true);
+            configBindable.BindValueChanged(id => dropdownBindable.Value = skinDropdown.Items.Single(s => s.ID == id.NewValue), true);
             dropdownBindable.BindValueChanged(skin =>
             {
                 if (skin.NewValue == random_skin_info)
@@ -120,23 +119,6 @@ namespace osu.Game.Overlays.Settings.Sections
 
                 configBindable.Value = skin.NewValue.ID;
             });
-        }
-
-        private void updateSelectedSkinFromConfig()
-        {
-            int id = configBindable.Value;
-
-            var skin = skinDropdown.Items.FirstOrDefault(s => s.ID == id);
-
-            if (skin == null)
-            {
-                // there may be a thread race condition where an item is selected that hasn't yet been added to the dropdown.
-                // to avoid adding complexity, let's just ensure the item is added so we can perform the selection.
-                skin = skins.Query(s => s.ID == id);
-                addItem(skin);
-            }
-
-            dropdownBindable.Value = skin;
         }
 
         private void updateItems()
@@ -150,14 +132,14 @@ namespace osu.Game.Overlays.Settings.Sections
         private void itemUpdated(ValueChangedEvent<WeakReference<SkinInfo>> weakItem)
         {
             if (weakItem.NewValue.TryGetTarget(out var item))
-                Schedule(() => addItem(item));
-        }
-
-        private void addItem(SkinInfo item)
-        {
-            List<SkinInfo> newDropdownItems = skinDropdown.Items.Where(i => !i.Equals(item)).Append(item).ToList();
-            sortUserSkins(newDropdownItems);
-            skinDropdown.Items = newDropdownItems;
+            {
+                Schedule(() =>
+                {
+                    List<SkinInfo> newDropdownItems = skinDropdown.Items.Where(i => !i.Equals(item)).Append(item).ToList();
+                    sortUserSkins(newDropdownItems);
+                    skinDropdown.Items = newDropdownItems;
+                });
+            }
         }
 
         private void itemRemoved(ValueChangedEvent<WeakReference<SkinInfo>> weakItem)
@@ -179,7 +161,7 @@ namespace osu.Game.Overlays.Settings.Sections
 
             private class SkinDropdownControl : DropdownControl
             {
-                protected override LocalisableString GenerateItemText(SkinInfo item) => item.ToString();
+                protected override string GenerateItemText(SkinInfo item) => item.ToString();
             }
         }
 

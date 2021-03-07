@@ -6,7 +6,6 @@ using System.Linq;
 using NUnit.Framework;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
-using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Platform;
 using osu.Framework.Testing;
@@ -27,10 +26,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
     public class TestSceneMultiplayerReadyButton : MultiplayerTestScene
     {
         private MultiplayerReadyButton button;
-        private OnlinePlayBeatmapAvailablilityTracker beatmapTracker;
         private BeatmapSetInfo importedSet;
-
-        private readonly Bindable<PlaylistItem> selectedItem = new Bindable<PlaylistItem>();
 
         private BeatmapManager beatmaps;
         private RulesetStore rulesets;
@@ -42,14 +38,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
         {
             Dependencies.Cache(rulesets = new RulesetStore(ContextFactory));
             Dependencies.Cache(beatmaps = new BeatmapManager(LocalStorage, ContextFactory, rulesets, null, audio, host, Beatmap.Default));
-            beatmaps.Import(TestResources.GetQuickTestBeatmapForImport()).Wait();
-
-            Add(beatmapTracker = new OnlinePlayBeatmapAvailablilityTracker
-            {
-                SelectedItem = { BindTarget = selectedItem }
-            });
-
-            Dependencies.Cache(beatmapTracker);
+            beatmaps.Import(TestResources.GetTestBeatmapForImport(true)).Wait();
         }
 
         [SetUp]
@@ -57,20 +46,20 @@ namespace osu.Game.Tests.Visual.Multiplayer
         {
             importedSet = beatmaps.GetAllUsableBeatmapSetsEnumerable(IncludedDetails.All).First();
             Beatmap.Value = beatmaps.GetWorkingBeatmap(importedSet.Beatmaps.First());
-            selectedItem.Value = new PlaylistItem
-            {
-                Beatmap = { Value = Beatmap.Value.BeatmapInfo },
-                Ruleset = { Value = Beatmap.Value.BeatmapInfo.Ruleset },
-            };
 
-            if (button != null)
-                Remove(button);
-
-            Add(button = new MultiplayerReadyButton
+            Child = button = new MultiplayerReadyButton
             {
                 Anchor = Anchor.Centre,
                 Origin = Anchor.Centre,
                 Size = new Vector2(200, 50),
+                SelectedItem =
+                {
+                    Value = new PlaylistItem
+                    {
+                        Beatmap = { Value = Beatmap.Value.BeatmapInfo },
+                        Ruleset = { Value = Beatmap.Value.BeatmapInfo.Ruleset }
+                    }
+                },
                 OnReadyClick = async () =>
                 {
                     readyClickOperation = OngoingOperationTracker.BeginOperation();
@@ -84,7 +73,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
                     await Client.ToggleReady();
                     readyClickOperation.Dispose();
                 }
-            });
+            };
         });
 
         [Test]

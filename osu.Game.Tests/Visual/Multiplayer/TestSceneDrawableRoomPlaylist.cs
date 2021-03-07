@@ -11,8 +11,8 @@ using osu.Framework.Graphics.Containers;
 using osu.Framework.Platform;
 using osu.Framework.Testing;
 using osu.Game.Beatmaps;
-using osu.Game.Beatmaps.Drawables;
 using osu.Game.Graphics.Containers;
+using osu.Game.Graphics.UserInterface;
 using osu.Game.Online.Rooms;
 using osu.Game.Overlays;
 using osu.Game.Rulesets;
@@ -20,7 +20,6 @@ using osu.Game.Rulesets.Osu;
 using osu.Game.Rulesets.Osu.Mods;
 using osu.Game.Screens.OnlinePlay;
 using osu.Game.Tests.Beatmaps;
-using osu.Game.Users;
 using osuTK;
 using osuTK.Input;
 
@@ -242,7 +241,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
         }
 
         private void moveToItem(int index, Vector2? offset = null)
-            => AddStep($"move mouse to item {index}", () => InputManager.MoveMouseTo(playlist.ChildrenOfType<DifficultyIcon>().ElementAt(index), offset));
+            => AddStep($"move mouse to item {index}", () => InputManager.MoveMouseTo(playlist.ChildrenOfType<OsuRearrangeableListItem<PlaylistItem>>().ElementAt(index), offset));
 
         private void moveToDragger(int index, Vector2? offset = null) => AddStep($"move mouse to dragger {index}", () =>
         {
@@ -253,7 +252,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
         private void moveToDeleteButton(int index, Vector2? offset = null) => AddStep($"move mouse to delete button {index}", () =>
         {
             var item = playlist.ChildrenOfType<OsuRearrangeableListItem<PlaylistItem>>().ElementAt(index);
-            InputManager.MoveMouseTo(item.ChildrenOfType<DrawableRoomPlaylistItem.PlaylistRemoveButton>().ElementAt(0), offset);
+            InputManager.MoveMouseTo(item.ChildrenOfType<IconButton>().ElementAt(0), offset);
         });
 
         private void assertHandleVisibility(int index, bool visible)
@@ -261,7 +260,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
                 () => (playlist.ChildrenOfType<OsuRearrangeableListItem<PlaylistItem>.PlaylistItemHandle>().ElementAt(index).Alpha > 0) == visible);
 
         private void assertDeleteButtonVisibility(int index, bool visible)
-            => AddAssert($"delete button {index} {(visible ? "is" : "is not")} visible", () => (playlist.ChildrenOfType<DrawableRoomPlaylistItem.PlaylistRemoveButton>().ElementAt(2 + index * 2).Alpha > 0) == visible);
+            => AddAssert($"delete button {index} {(visible ? "is" : "is not")} visible", () => (playlist.ChildrenOfType<IconButton>().ElementAt(2 + index * 2).Alpha > 0) == visible);
 
         private void createPlaylist(bool allowEdit, bool allowSelection)
         {
@@ -279,21 +278,7 @@ namespace osu.Game.Tests.Visual.Multiplayer
                     playlist.Items.Add(new PlaylistItem
                     {
                         ID = i,
-                        Beatmap =
-                        {
-                            Value = i % 2 == 1
-                                ? new TestBeatmap(new OsuRuleset().RulesetInfo).BeatmapInfo
-                                : new BeatmapInfo
-                                {
-                                    Metadata = new BeatmapMetadata
-                                    {
-                                        Artist = "Artist",
-                                        Author = new User { Username = "Creator name here" },
-                                        Title = "Long title used to check background colour",
-                                    },
-                                    BeatmapSet = new BeatmapSetInfo()
-                                }
-                        },
+                        Beatmap = { Value = new TestBeatmap(new OsuRuleset().RulesetInfo).BeatmapInfo },
                         Ruleset = { Value = new OsuRuleset().RulesetInfo },
                         RequiredMods =
                         {

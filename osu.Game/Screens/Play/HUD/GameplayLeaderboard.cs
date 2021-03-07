@@ -4,7 +4,6 @@
 using System;
 using System.Linq;
 using JetBrains.Annotations;
-using osu.Framework.Bindables;
 using osu.Framework.Caching;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
@@ -16,8 +15,6 @@ namespace osu.Game.Screens.Play.HUD
     public class GameplayLeaderboard : FillFlowContainer<GameplayLeaderboardScore>
     {
         private readonly Cached sorting = new Cached();
-
-        public Bindable<bool> Expanded = new Bindable<bool>();
 
         public GameplayLeaderboard()
         {
@@ -50,7 +47,8 @@ namespace osu.Game.Screens.Play.HUD
         {
             var drawable = new GameplayLeaderboardScore(user, isTracked)
             {
-                Expanded = { BindTarget = Expanded },
+                Anchor = Anchor.TopRight,
+                Origin = Anchor.TopRight,
             };
 
             base.Add(drawable);

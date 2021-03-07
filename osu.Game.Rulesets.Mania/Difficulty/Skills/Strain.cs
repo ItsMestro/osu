@@ -6,7 +6,6 @@ using osu.Framework.Utils;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Skills;
 using osu.Game.Rulesets.Mania.Difficulty.Preprocessing;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects;
 
 namespace osu.Game.Rulesets.Mania.Difficulty.Skills
@@ -25,8 +24,7 @@ namespace osu.Game.Rulesets.Mania.Difficulty.Skills
         private double individualStrain;
         private double overallStrain;
 
-        public Strain(Mod[] mods, int totalColumns)
-            : base(mods)
+        public Strain(int totalColumns)
         {
             holdEndTimes = new double[totalColumns];
             individualStrains = new double[totalColumns];

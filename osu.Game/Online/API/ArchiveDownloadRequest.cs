@@ -10,7 +10,7 @@ namespace osu.Game.Online.API
     {
         public readonly TModel Model;
 
-        public float Progress { get; private set; }
+        public float Progress;
 
         public event Action<float> DownloadProgressed;
 
@@ -18,13 +18,7 @@ namespace osu.Game.Online.API
         {
             Model = model;
 
-            Progressed += (current, total) => SetProgress((float)current / total);
-        }
-
-        protected void SetProgress(float progress)
-        {
-            Progress = progress;
-            DownloadProgressed?.Invoke(progress);
+            Progressed += (current, total) => DownloadProgressed?.Invoke(Progress = (float)current / total);
         }
     }
 }

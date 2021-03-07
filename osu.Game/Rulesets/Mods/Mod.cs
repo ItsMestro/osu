@@ -134,7 +134,7 @@ namespace osu.Game.Rulesets.Mods
         }
 
         /// <summary>
-        /// Copies mod setting values from <paramref name="source"/> into this instance, overwriting all existing settings.
+        /// Copies mod setting values from <paramref name="source"/> into this instance.
         /// </summary>
         /// <param name="source">The mod to copy properties from.</param>
         public void CopyFrom(Mod source)
@@ -147,7 +147,9 @@ namespace osu.Game.Rulesets.Mods
                 var targetBindable = (IBindable)prop.GetValue(this);
                 var sourceBindable = (IBindable)prop.GetValue(source);
 
-                CopyAdjustedSetting(targetBindable, sourceBindable);
+                // we only care about changes that have been made away from defaults.
+                if (!sourceBindable.IsDefault)
+                    CopyAdjustedSetting(targetBindable, sourceBindable);
             }
         }
 
@@ -173,10 +175,5 @@ namespace osu.Game.Rulesets.Mods
         }
 
         public bool Equals(IMod other) => GetType() == other?.GetType();
-
-        /// <summary>
-        /// Reset all custom settings for this mod back to their defaults.
-        /// </summary>
-        public virtual void ResetSettingsToDefaults() => CopyFrom((Mod)Activator.CreateInstance(GetType()));
     }
 }

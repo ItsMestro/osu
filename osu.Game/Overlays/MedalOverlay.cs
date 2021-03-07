@@ -39,7 +39,7 @@ namespace osu.Game.Overlays
         private readonly Sprite innerSpin, outerSpin;
         private DrawableMedal drawableMedal;
 
-        private Sample getSample;
+        private SampleChannel getSample;
 
         private readonly Container content;
 

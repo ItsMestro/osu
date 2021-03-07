@@ -7,9 +7,9 @@ namespace osu.Game.Online.Rooms
 {
     public class GetRoomLeaderboardRequest : APIRequest<APILeaderboard>
     {
-        private readonly long roomId;
+        private readonly int roomId;
 
-        public GetRoomLeaderboardRequest(long roomId)
+        public GetRoomLeaderboardRequest(int roomId)
         {
             this.roomId = roomId;
         }

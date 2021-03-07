@@ -68,19 +68,15 @@ namespace osu.Game.Screens
 
         public override bool OnExiting(IScreen next)
         {
-            if (IsLoaded)
-            {
-                this.FadeOut(transition_length, Easing.OutExpo);
-                this.MoveToX(x_movement_amount, transition_length, Easing.OutExpo);
-            }
+            this.FadeOut(transition_length, Easing.OutExpo);
+            this.MoveToX(x_movement_amount, transition_length, Easing.OutExpo);
 
             return base.OnExiting(next);
         }
 
         public override void OnResuming(IScreen last)
         {
-            if (IsLoaded)
-                this.MoveToX(0, transition_length, Easing.OutExpo);
+            this.MoveToX(0, transition_length, Easing.OutExpo);
             base.OnResuming(last);
         }
     }

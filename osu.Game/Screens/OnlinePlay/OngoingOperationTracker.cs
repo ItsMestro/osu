@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 
@@ -42,41 +43,17 @@ namespace osu.Game.Screens.OnlinePlay
             leasedInProgress = inProgress.BeginLease(true);
             leasedInProgress.Value = true;
 
-            return new OngoingOperation(this, leasedInProgress);
-        }
-
-        private void endOperationWithKnownLease(LeasedBindable<bool> lease)
-        {
             // for extra safety, marshal the end of operation back to the update thread if necessary.
-            Scheduler.Add(() =>
-            {
-                if (lease != leasedInProgress)
-                    return;
-
-                // UnbindAll() is purposefully used instead of Return() - the two do roughly the same thing, with one difference:
-                // the former won't throw if the lease has already been returned before.
-                // this matters because framework can unbind the lease via the internal UnbindAllBindables(), which is not always detectable
-                // (it is in the case of disposal, but not in the case of screen exit - at least not cleanly).
-                leasedInProgress?.UnbindAll();
-                leasedInProgress = null;
-            }, false);
+            return new InvokeOnDisposal(() => Scheduler.Add(endOperation, false));
         }
 
-        private class OngoingOperation : IDisposable
+        private void endOperation()
         {
-            private readonly OngoingOperationTracker tracker;
-            private readonly LeasedBindable<bool> lease;
+            if (leasedInProgress == null)
+                throw new InvalidOperationException("Cannot end operation multiple times.");
 
-            public OngoingOperation(OngoingOperationTracker tracker, LeasedBindable<bool> lease)
-            {
-                this.tracker = tracker;
-                this.lease = lease;
-            }
-
-            public void Dispose()
-            {
-                tracker.endOperationWithKnownLease(lease);
-            }
+            leasedInProgress.Return();
+            leasedInProgress = null;
         }
     }
 }

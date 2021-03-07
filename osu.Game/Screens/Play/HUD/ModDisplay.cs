@@ -72,6 +72,19 @@ namespace osu.Game.Screens.Play.HUD
                     }
                 },
             };
+
+            Current.ValueChanged += mods =>
+            {
+                iconsContainer.Clear();
+
+                foreach (Mod mod in mods.NewValue)
+                {
+                    iconsContainer.Add(new ModIcon(mod) { Scale = new Vector2(0.6f) });
+                }
+
+                if (IsLoaded)
+                    appearTransform();
+            };
         }
 
         protected override void Dispose(bool isDisposing)
@@ -84,19 +97,7 @@ namespace osu.Game.Screens.Play.HUD
         {
             base.LoadComplete();
 
-            Current.BindValueChanged(mods =>
-            {
-                iconsContainer.Clear();
-
-                if (mods.NewValue != null)
-                {
-                    foreach (Mod mod in mods.NewValue)
-                        iconsContainer.Add(new ModIcon(mod) { Scale = new Vector2(0.6f) });
-
-                    appearTransform();
-                }
-            }, true);
-
+            appearTransform();
             iconsContainer.FadeInFromZero(fade_duration, Easing.OutQuint);
         }
 

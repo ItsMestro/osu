@@ -4,21 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using osu.Framework.Allocation;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Utils;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Sprites;
-using osu.Game.Rulesets.Objects.Drawables;
 
 namespace osu.Game.Rulesets.Osu.Skinning.Default
 {
     public class SpinnerSpmCounter : Container
     {
-        [Resolved]
-        private DrawableHitObject drawableSpinner { get; set; }
-
         private readonly OsuSpriteText spmText;
 
         public SpinnerSpmCounter()
@@ -41,12 +36,6 @@ namespace osu.Game.Rulesets.Osu.Skinning.Default
                     Y = 30
                 }
             };
-        }
-
-        protected override void LoadComplete()
-        {
-            base.LoadComplete();
-            drawableSpinner.HitObjectApplied += resetState;
         }
 
         private double spm;
@@ -92,20 +81,6 @@ namespace osu.Game.Rulesets.Osu.Skinning.Default
             }
 
             records.Enqueue(new RotationRecord { Rotation = currentRotation, Time = Time.Current });
-        }
-
-        private void resetState(DrawableHitObject hitObject)
-        {
-            SpinsPerMinute = 0;
-            records.Clear();
-        }
-
-        protected override void Dispose(bool isDisposing)
-        {
-            base.Dispose(isDisposing);
-
-            if (drawableSpinner != null)
-                drawableSpinner.HitObjectApplied -= resetState;
         }
     }
 }

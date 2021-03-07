@@ -18,7 +18,7 @@ namespace osu.Game.Online.Rooms
     public class MultiplayerScore
     {
         [JsonProperty("id")]
-        public long ID { get; set; }
+        public int ID { get; set; }
 
         [JsonProperty("user")]
         public User User { get; set; }

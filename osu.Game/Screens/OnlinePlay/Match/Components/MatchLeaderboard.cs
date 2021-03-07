@@ -15,7 +15,7 @@ namespace osu.Game.Screens.OnlinePlay.Match.Components
     public class MatchLeaderboard : Leaderboard<MatchLeaderboardScope, APIUserScoreAggregate>
     {
         [Resolved(typeof(Room), nameof(Room.RoomID))]
-        private Bindable<long?> roomId { get; set; }
+        private Bindable<int?> roomId { get; set; }
 
         [BackgroundDependencyLoader]
         private void load()

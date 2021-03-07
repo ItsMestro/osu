@@ -39,7 +39,7 @@ namespace osu.Game.Rulesets.Osu.Objects.Drawables
 
             if (JudgedObject?.HitObject is OsuHitObject osuObject)
             {
-                Position = osuObject.StackedEndPosition;
+                Position = osuObject.StackedPosition;
                 Scale = new Vector2(osuObject.Scale);
             }
         }

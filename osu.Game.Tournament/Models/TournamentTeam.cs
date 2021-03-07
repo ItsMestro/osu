@@ -30,13 +30,20 @@ namespace osu.Game.Tournament.Models
         /// </summary>
         public Bindable<string> Acronym = new Bindable<string>(string.Empty);
 
+        public Bindable<string> PlayerOne = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerTwo = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerThree = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerFour = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerFive = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerSix = new Bindable<string>(string.Empty);
+
         public BindableList<SeedingResult> SeedingResults = new BindableList<SeedingResult>();
 
         public double AverageRank
         {
             get
             {
-                var ranks = Players.Select(p => p.Statistics?.GlobalRank)
+                var ranks = Players.Select(p => p.Statistics?.Ranks.Global)
                                    .Where(i => i.HasValue)
                                    .Select(i => i.Value)
                                    .ToArray();

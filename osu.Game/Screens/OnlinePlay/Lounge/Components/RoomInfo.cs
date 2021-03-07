@@ -20,34 +20,41 @@ namespace osu.Game.Screens.OnlinePlay.Lounge.Components
         {
             AutoSizeAxes = Axes.Y;
 
-            RoomLocalUserInfo localUserInfo;
             RoomStatusInfo statusInfo;
             ModeTypeInfo typeInfo;
             ParticipantInfo participantInfo;
 
             InternalChild = new FillFlowContainer
             {
-                Anchor = Anchor.CentreLeft,
-                Origin = Anchor.CentreLeft,
                 RelativeSizeAxes = Axes.X,
-                Spacing = new Vector2(0, 10),
                 AutoSizeAxes = Axes.Y,
                 Direction = FillDirection.Vertical,
+                Spacing = new Vector2(0, 4),
                 Children = new Drawable[]
                 {
-                    roomName = new OsuTextFlowContainer(t => t.Font = OsuFont.GetFont(size: 30))
-                    {
-                        RelativeSizeAxes = Axes.X,
-                        AutoSizeAxes = Axes.Y,
-                    },
-                    participantInfo = new ParticipantInfo(),
                     new Container
                     {
                         RelativeSizeAxes = Axes.X,
                         AutoSizeAxes = Axes.Y,
                         Children = new Drawable[]
                         {
-                            statusInfo = new RoomStatusInfo(),
+                            new FillFlowContainer
+                            {
+                                Anchor = Anchor.CentreLeft,
+                                Origin = Anchor.CentreLeft,
+                                RelativeSizeAxes = Axes.X,
+                                AutoSizeAxes = Axes.Y,
+                                Direction = FillDirection.Vertical,
+                                Children = new Drawable[]
+                                {
+                                    roomName = new OsuTextFlowContainer(t => t.Font = OsuFont.GetFont(size: 30))
+                                    {
+                                        RelativeSizeAxes = Axes.X,
+                                        AutoSizeAxes = Axes.Y,
+                                    },
+                                    statusInfo = new RoomStatusInfo(),
+                                }
+                            },
                             typeInfo = new ModeTypeInfo
                             {
                                 Anchor = Anchor.BottomRight,
@@ -55,21 +62,20 @@ namespace osu.Game.Screens.OnlinePlay.Lounge.Components
                             }
                         }
                     },
-                    localUserInfo = new RoomLocalUserInfo(),
+                    participantInfo = new ParticipantInfo(),
                 }
             };
 
-            statusElements.AddRange(new Drawable[]
-            {
-                statusInfo, typeInfo, participantInfo, localUserInfo
-            });
+            statusElements.AddRange(new Drawable[] { statusInfo, typeInfo, participantInfo });
         }
 
         protected override void LoadComplete()
         {
             base.LoadComplete();
+
             if (RoomID.Value == null)
                 statusElements.ForEach(e => e.FadeOut());
+
             RoomID.BindValueChanged(id =>
             {
                 if (id.NewValue == null)
@@ -77,6 +83,7 @@ namespace osu.Game.Screens.OnlinePlay.Lounge.Components
                 else
                     statusElements.ForEach(e => e.FadeIn(100));
             }, true);
+
             RoomName.BindValueChanged(name =>
             {
                 roomName.Text = name.NewValue ?? "No room selected";

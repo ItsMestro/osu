@@ -29,7 +29,7 @@ namespace osu.Game.Skinning
         protected TextureStore Textures;
 
         [CanBeNull]
-        protected ISampleStore Samples;
+        protected IResourceStore<SampleChannel> Samples;
 
         /// <summary>
         /// Whether texture for the keys exists.
@@ -452,7 +452,7 @@ namespace osu.Game.Skinning
             return null;
         }
 
-        public override Sample GetSample(ISampleInfo sampleInfo)
+        public override SampleChannel GetSample(ISampleInfo sampleInfo)
         {
             IEnumerable<string> lookupNames;
 

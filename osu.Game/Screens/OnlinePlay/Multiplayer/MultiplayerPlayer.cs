@@ -89,13 +89,6 @@ namespace osu.Game.Screens.OnlinePlay.Multiplayer
             Debug.Assert(client.Room != null);
         }
 
-        protected override void LoadComplete()
-        {
-            base.LoadComplete();
-
-            ((IBindable<bool>)leaderboard.Expanded).BindTo(IsBreakTime);
-        }
-
         protected override void StartGameplay()
         {
             // block base call, but let the server know we are ready to start.

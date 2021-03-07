@@ -53,6 +53,8 @@ namespace osu.Game.Screens.Play.HUD
         [BackgroundDependencyLoader]
         private void load(OsuConfigManager config, IAPIProvider api)
         {
+            streamingClient.OnNewFrames += handleIncomingFrames;
+
             foreach (var userId in playingUsers)
             {
                 streamingClient.WatchUser(userId);
@@ -88,9 +90,6 @@ namespace osu.Game.Screens.Play.HUD
 
             playingUsers.BindTo(multiplayerClient.CurrentMatchPlayingUserIds);
             playingUsers.BindCollectionChanged(usersChanged);
-
-            // this leaderboard should be guaranteed to be completely loaded before the gameplay starts (is a prerequisite in MultiplayerPlayer).
-            streamingClient.OnNewFrames += handleIncomingFrames;
         }
 
         private void usersChanged(object sender, NotifyCollectionChangedEventArgs e)

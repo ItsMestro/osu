@@ -5,13 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using osu.Framework.Allocation;
+using osu.Framework.Bindables;
 using osu.Framework.Graphics;
 using osu.Framework.Screens;
 using osu.Framework.Threading;
+using osu.Game.Beatmaps;
 using osu.Game.Overlays;
 using osu.Game.Overlays.Dialog;
 using osu.Game.Overlays.Notifications;
-using osu.Game.Screens;
 using osu.Game.Screens.Menu;
 
 namespace osu.Game
@@ -27,6 +28,9 @@ namespace osu.Game
 
         [Resolved]
         private DialogOverlay dialogOverlay { get; set; }
+
+        [Resolved]
+        private IBindable<WorkingBeatmap> beatmap { get; set; }
 
         [Resolved(canBeNull: true)]
         private OsuGame game { get; set; }
@@ -77,45 +81,24 @@ namespace osu.Game
 
             game?.CloseAllOverlays(false);
 
-            findValidTarget(current);
-        }
-
-        private bool findValidTarget(IScreen current)
-        {
-            var type = current.GetType();
-
-            // check if we are already at a valid target screen.
-            if (validScreens.Any(t => t.IsAssignableFrom(type)))
+            // we may already be at the target screen type.
+            if (validScreens.Contains(current.GetType()) && !beatmap.Disabled)
             {
                 finalAction(current);
                 Cancel();
-                return true;
+                return;
             }
 
             while (current != null)
             {
-                // if this has a sub stack, recursively check the screens within it.
-                if (current is IHasSubScreenStack currentSubScreen)
-                {
-                    if (findValidTarget(currentSubScreen.SubScreenStack.CurrentScreen))
-                    {
-                        // should be correct in theory, but currently untested/unused in existing implementations.
-                        current.MakeCurrent();
-                        return true;
-                    }
-                }
-
-                if (validScreens.Any(t => t.IsAssignableFrom(type)))
+                if (validScreens.Contains(current.GetType()))
                 {
                     current.MakeCurrent();
-                    return true;
+                    break;
                 }
 
                 current = current.GetParentScreen();
-                type = current?.GetType();
             }
-
-            return false;
         }
 
         /// <summary>

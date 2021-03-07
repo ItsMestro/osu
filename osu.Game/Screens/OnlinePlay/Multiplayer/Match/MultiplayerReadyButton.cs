@@ -13,6 +13,7 @@ using osu.Game.Graphics;
 using osu.Game.Graphics.Backgrounds;
 using osu.Game.Online.API;
 using osu.Game.Online.Multiplayer;
+using osu.Game.Online.Rooms;
 using osu.Game.Screens.OnlinePlay.Components;
 using osuTK;
 
@@ -20,6 +21,8 @@ namespace osu.Game.Screens.OnlinePlay.Multiplayer.Match
 {
     public class MultiplayerReadyButton : MultiplayerRoomComposite
     {
+        public Bindable<PlaylistItem> SelectedItem => button.SelectedItem;
+
         public Action OnReadyClick
         {
             set => button.Action = value;
@@ -36,7 +39,7 @@ namespace osu.Game.Screens.OnlinePlay.Multiplayer.Match
 
         private IBindable<bool> operationInProgress;
 
-        private Sample sampleReadyCount;
+        private SampleChannel sampleReadyCount;
 
         private readonly ButtonWithTrianglesExposed button;
 
@@ -117,9 +120,8 @@ namespace osu.Game.Screens.OnlinePlay.Multiplayer.Match
             if (sampleReadyCount == null)
                 return;
 
-            var channel = sampleReadyCount.GetChannel();
-            channel.Frequency.Value = 0.77f + countReady * 0.06f;
-            channel.Play();
+            sampleReadyCount.Frequency.Value = 0.77f + countReady * 0.06f;
+            sampleReadyCount.Play();
         }
 
         private void updateButtonColour(bool green)

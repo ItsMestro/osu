@@ -51,12 +51,7 @@ namespace osu.Game.Beatmaps
         [JsonProperty(@"tags")]
         public string Tags { get; set; }
 
-        /// <summary>
-        /// The time in milliseconds to begin playing the track for preview purposes.
-        /// If -1, the track should begin playing at 40% of its length.
-        /// </summary>
         public int PreviewTime { get; set; }
-
         public string AudioFile { get; set; }
         public string BackgroundFile { get; set; }
 

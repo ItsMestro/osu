@@ -54,5 +54,10 @@ namespace osu.Game.Database
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        ~DatabaseWriteUsage()
+        {
+            Dispose(false);
+        }
     }
 }

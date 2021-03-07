@@ -21,10 +21,7 @@ namespace osu.Game.Screens.Edit.Components.Timelines.Summary.Parts
     /// </summary>
     public class TimelinePart<T> : Container<T> where T : Drawable
     {
-        private readonly IBindable<WorkingBeatmap> beatmap = new Bindable<WorkingBeatmap>();
-
-        [Resolved]
-        protected EditorBeatmap EditorBeatmap { get; private set; }
+        protected readonly IBindable<WorkingBeatmap> Beatmap = new Bindable<WorkingBeatmap>();
 
         protected readonly IBindable<Track> Track = new Bindable<Track>();
 
@@ -36,9 +33,10 @@ namespace osu.Game.Screens.Edit.Components.Timelines.Summary.Parts
         {
             AddInternal(this.content = content ?? new Container<T> { RelativeSizeAxes = Axes.Both });
 
-            beatmap.ValueChanged += b =>
+            Beatmap.ValueChanged += b =>
             {
                 updateRelativeChildSize();
+                LoadBeatmap(b.NewValue);
             };
 
             Track.ValueChanged += _ => updateRelativeChildSize();
@@ -47,26 +45,24 @@ namespace osu.Game.Screens.Edit.Components.Timelines.Summary.Parts
         [BackgroundDependencyLoader]
         private void load(IBindable<WorkingBeatmap> beatmap, EditorClock clock)
         {
-            this.beatmap.BindTo(beatmap);
-            LoadBeatmap(EditorBeatmap);
-
+            Beatmap.BindTo(beatmap);
             Track.BindTo(clock.Track);
         }
 
         private void updateRelativeChildSize()
         {
             // the track may not be loaded completely (only has a length once it is).
-            if (!beatmap.Value.Track.IsLoaded)
+            if (!Beatmap.Value.Track.IsLoaded)
             {
                 content.RelativeChildSize = Vector2.One;
                 Schedule(updateRelativeChildSize);
                 return;
             }
 
-            content.RelativeChildSize = new Vector2((float)Math.Max(1, beatmap.Value.Track.Length), 1);
+            content.RelativeChildSize = new Vector2((float)Math.Max(1, Beatmap.Value.Track.Length), 1);
         }
 
-        protected virtual void LoadBeatmap(EditorBeatmap beatmap)
+        protected virtual void LoadBeatmap(WorkingBeatmap beatmap)
         {
             content.Clear();
         }

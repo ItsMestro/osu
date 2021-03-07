@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
-using osu.Framework.Utils;
+using osu.Game.Utils;
 
 namespace osu.Game.Rulesets.Scoring
 {

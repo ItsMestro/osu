@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using osu.Framework.Allocation;
 using osu.Framework.Bindables;
@@ -13,7 +14,6 @@ using osu.Framework.Testing;
 using osu.Framework.Utils;
 using osu.Game.Database;
 using osu.Game.Online;
-using osu.Game.Online.API;
 using osu.Game.Online.Spectator;
 using osu.Game.Replays.Legacy;
 using osu.Game.Rulesets.Osu.Scoring;
@@ -51,8 +51,6 @@ namespace osu.Game.Tests.Visual.Multiplayer
         [SetUpSteps]
         public override void SetUpSteps()
         {
-            AddStep("set local user", () => ((DummyAPIAccess)API).LocalUser.Value = lookupCache.GetUserAsync(1).Result);
-
             AddStep("create leaderboard", () =>
             {
                 leaderboard?.Expire();
@@ -88,7 +86,6 @@ namespace osu.Game.Tests.Visual.Multiplayer
         public void TestScoreUpdates()
         {
             AddRepeatStep("update state", () => streamingClient.RandomlyUpdateState(), 100);
-            AddToggleStep("switch compact mode", expanded => leaderboard.Expanded.Value = expanded);
         }
 
         [Test]
@@ -166,6 +163,8 @@ namespace osu.Game.Tests.Visual.Multiplayer
                     ((ISpectatorClient)this).UserSentFrames(userId, new FrameDataBundle(header, Array.Empty<LegacyReplayFrame>()));
                 }
             }
+
+            protected override Task Connect() => Task.CompletedTask;
         }
     }
 }

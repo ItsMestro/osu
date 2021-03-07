@@ -75,7 +75,7 @@ namespace osu.Game.Screens
         /// </summary>
         public virtual bool DisallowExternalBeatmapRulesetChanges => false;
 
-        private Sample sampleExit;
+        private SampleChannel sampleExit;
 
         protected virtual bool PlayResumeSound => true;
 

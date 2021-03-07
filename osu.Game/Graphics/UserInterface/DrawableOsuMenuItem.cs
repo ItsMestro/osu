@@ -10,7 +10,6 @@ using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.UserInterface;
 using osu.Framework.Input.Events;
-using osu.Framework.Localisation;
 using osu.Game.Graphics.Sprites;
 using osuTK.Graphics;
 
@@ -23,8 +22,8 @@ namespace osu.Game.Graphics.UserInterface
         private const int text_size = 17;
         private const int transition_length = 80;
 
-        private Sample sampleClick;
-        private Sample sampleHover;
+        private SampleChannel sampleClick;
+        private SampleChannel sampleHover;
 
         private TextContainer text;
 
@@ -106,7 +105,7 @@ namespace osu.Game.Graphics.UserInterface
 
         protected class TextContainer : Container, IHasText
         {
-            public LocalisableString Text
+            public string Text
             {
                 get => NormalText.Text;
                 set

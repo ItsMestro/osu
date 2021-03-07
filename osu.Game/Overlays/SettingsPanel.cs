@@ -40,8 +40,6 @@ namespace osu.Game.Overlays
 
         private SeekLimitedSearchTextBox searchTextBox;
 
-        protected override string PopInSampleName => "UI/settings-pop-in";
-
         /// <summary>
         /// Provide a source for the toolbar height.
         /// </summary>

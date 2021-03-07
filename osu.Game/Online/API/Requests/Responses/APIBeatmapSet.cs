@@ -81,7 +81,7 @@ namespace osu.Game.Online.API.Requests.Responses
         [JsonProperty(@"beatmaps")]
         private IEnumerable<APIBeatmap> beatmaps { get; set; }
 
-        public virtual BeatmapSetInfo ToBeatmapSet(RulesetStore rulesets)
+        public BeatmapSetInfo ToBeatmapSet(RulesetStore rulesets)
         {
             var beatmapSet = new BeatmapSetInfo
             {

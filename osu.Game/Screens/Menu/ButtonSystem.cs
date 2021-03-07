@@ -81,7 +81,7 @@ namespace osu.Game.Screens.Menu
         private readonly List<Button> buttonsTopLevel = new List<Button>();
         private readonly List<Button> buttonsPlay = new List<Button>();
 
-        private Sample sampleBack;
+        private SampleChannel sampleBack;
 
         private readonly LogoTrackingContainer logoTrackingContainer;
 
@@ -129,7 +129,7 @@ namespace osu.Game.Screens.Menu
             buttonsPlay.ForEach(b => b.VisibleState = ButtonSystemState.Play);
 
             buttonsTopLevel.Add(new Button(@"play", @"button-play-select", OsuIcon.Logo, new Color4(102, 68, 204, 255), () => State = ButtonSystemState.Play, WEDGE_WIDTH, Key.P));
-            buttonsTopLevel.Add(new Button(@"edit", @"button-edit-select", OsuIcon.EditCircle, new Color4(238, 170, 0, 255), () => OnEdit?.Invoke(), 0, Key.E));
+            buttonsTopLevel.Add(new Button(@"edit", @"button-generic-select", OsuIcon.EditCircle, new Color4(238, 170, 0, 255), () => OnEdit?.Invoke(), 0, Key.E));
             buttonsTopLevel.Add(new Button(@"browse", @"button-direct-select", OsuIcon.ChevronDownCircle, new Color4(165, 204, 0, 255), () => OnBeatmapListing?.Invoke(), 0, Key.D));
 
             if (host.CanExit)
@@ -167,18 +167,6 @@ namespace osu.Game.Screens.Menu
                         loginOverlay?.Show();
                         return true;
                     }
-                });
-
-                return;
-            }
-
-            // disabled until the underlying runtime issue is resolved, see https://github.com/mono/mono/issues/20805.
-            if (RuntimeInfo.OS == RuntimeInfo.Platform.iOS)
-            {
-                notifications?.Post(new SimpleNotification
-                {
-                    Text = "Multiplayer is temporarily unavailable on iOS as we figure out some low level issues.",
-                    Icon = FontAwesome.Solid.AppleAlt,
                 });
 
                 return;

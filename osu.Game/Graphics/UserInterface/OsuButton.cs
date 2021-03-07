@@ -11,7 +11,6 @@ using osu.Framework.Graphics.Shapes;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.UserInterface;
 using osu.Framework.Input.Events;
-using osu.Framework.Localisation;
 using osu.Game.Graphics.Sprites;
 using osuTK.Graphics;
 
@@ -22,9 +21,9 @@ namespace osu.Game.Graphics.UserInterface
     /// </summary>
     public class OsuButton : Button
     {
-        public LocalisableString Text
+        public string Text
         {
-            get => SpriteText?.Text ?? default;
+            get => SpriteText?.Text;
             set
             {
                 if (SpriteText != null)

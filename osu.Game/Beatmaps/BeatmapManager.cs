@@ -20,7 +20,6 @@ using osu.Framework.IO.Stores;
 using osu.Framework.Lists;
 using osu.Framework.Logging;
 using osu.Framework.Platform;
-using osu.Framework.Statistics;
 using osu.Framework.Testing;
 using osu.Game.Beatmaps.Formats;
 using osu.Game.Database;
@@ -65,9 +64,7 @@ namespace osu.Game.Beatmaps
 
         protected override string[] HashableFileTypes => new[] { ".osu" };
 
-        protected override string ImportFromStablePath => ".";
-
-        protected override Storage PrepareStableStorage(StableStorage stableStorage) => stableStorage.GetSongStorage();
+        protected override string ImportFromStablePath => "Songs";
 
         private readonly RulesetStore rulesets;
         private readonly BeatmapStore beatmaps;
@@ -312,9 +309,6 @@ namespace osu.Game.Beatmaps
 
                 workingCache.Add(working = new BeatmapManagerWorkingBeatmap(beatmapInfo, this));
 
-                // best effort; may be higher than expected.
-                GlobalStatistics.Get<int>(nameof(Beatmaps), $"Cached {nameof(WorkingBeatmap)}s").Value = workingCache.Count();
-
                 return working;
             }
         }
@@ -457,7 +451,7 @@ namespace osu.Game.Beatmaps
                     // TODO: this should be done in a better place once we actually need to dynamically update it.
                     beatmap.BeatmapInfo.StarDifficulty = ruleset?.CreateInstance().CreateDifficultyCalculator(new DummyConversionBeatmap(beatmap)).Calculate().StarRating ?? 0;
                     beatmap.BeatmapInfo.Length = calculateLength(beatmap);
-                    beatmap.BeatmapInfo.BPM = 60000 / beatmap.GetMostCommonBeatLength();
+                    beatmap.BeatmapInfo.BPM = beatmap.ControlPointInfo.BPMMode;
 
                     beatmapInfos.Add(beatmap.BeatmapInfo);
                 }

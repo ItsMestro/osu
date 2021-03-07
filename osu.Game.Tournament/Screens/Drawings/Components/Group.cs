@@ -28,7 +28,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
         {
             GroupName = name;
 
-            Size = new Vector2(176, 128);
+            Size = new Vector2(440, 320);
 
             Masking = true;
             CornerRadius = 4;
@@ -38,7 +38,8 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                 new Box
                 {
                     RelativeSizeAxes = Axes.Both,
-                    Colour = new Color4(54, 54, 54, 255)
+                    //Colour = new Color4(54, 54, 54, 255)
+                    Colour = new Color4(8, 35, 81, 255)
                 },
                 // Group name
                 new TournamentSpriteText
@@ -48,19 +49,20 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
 
                     Position = new Vector2(0, 7f),
 
-                    Text = $"GROUP {name.ToUpperInvariant()}",
-                    Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 8),
-                    Colour = new Color4(255, 204, 34, 255),
+                    Text = $"Showmatch Mappool",
+                    Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 16),
+                    //Colour = new Color4(255, 204, 34, 255),
+                    Colour = new Color4(239, 239, 239, 255),
                 },
                 teams = new FillFlowContainer<GroupTeam>
                 {
                     RelativeSizeAxes = Axes.Both,
 
-                    Spacing = new Vector2(6f, 22),
+                    Spacing = new Vector2(8f, 8),
 
                     Margin = new MarginPadding
                     {
-                        Top = 21f,
+                        Top = 28f,
                         Bottom = 7f,
                         Left = 7f,
                         Right = 7f
@@ -73,7 +75,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
         {
             GroupTeam gt = new GroupTeam(team);
 
-            if (TeamsCount < 8)
+            if (TeamsCount < 16)
             {
                 teams.Add(gt);
                 allTeams.Add(gt);

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Humanizer;
-using MessagePack;
 using Newtonsoft.Json;
 using osu.Framework.Bindables;
 using osu.Game.Configuration;
@@ -14,21 +13,16 @@ using osu.Game.Rulesets.Mods;
 
 namespace osu.Game.Online.API
 {
-    [MessagePackObject]
     public class APIMod : IMod
     {
         [JsonProperty("acronym")]
-        [Key(0)]
         public string Acronym { get; set; }
 
         [JsonProperty("settings")]
-        [Key(1)]
-        [MessagePackFormatter(typeof(ModSettingsDictionaryFormatter))]
         public Dictionary<string, object> Settings { get; set; } = new Dictionary<string, object>();
 
         [JsonConstructor]
-        [SerializationConstructor]
-        public APIMod()
+        private APIMod()
         {
         }
 

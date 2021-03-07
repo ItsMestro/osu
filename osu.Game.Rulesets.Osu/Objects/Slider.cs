@@ -114,14 +114,8 @@ namespace osu.Game.Rulesets.Osu.Objects
         /// </summary>
         public double TickDistanceMultiplier = 1;
 
-        /// <summary>
-        /// Whether this <see cref="Slider"/>'s judgement is fully handled by its nested <see cref="HitObject"/>s.
-        /// If <c>false</c>, this <see cref="Slider"/> will be judged proportionally to the number of nested <see cref="HitObject"/>s hit.
-        /// </summary>
-        public bool OnlyJudgeNestedObjects = true;
-
         [JsonIgnore]
-        public SliderHeadCircle HeadCircle { get; protected set; }
+        public HitCircle HeadCircle { get; protected set; }
 
         [JsonIgnore]
         public SliderTailCircle TailCircle { get; protected set; }
@@ -146,8 +140,7 @@ namespace osu.Game.Rulesets.Osu.Objects
 
             // The samples should be attached to the slider tail, however this can only be done after LegacyLastTick is removed otherwise they would play earlier than they're intended to.
             // For now, the samples are attached to and played by the slider itself at the correct end time.
-            // ToArray call is required as GetNodeSamples may fallback to Samples itself (without it it will get cleared due to the list reference being live).
-            Samples = this.GetNodeSamples(repeatCount + 1).ToArray();
+            Samples = this.GetNodeSamples(repeatCount + 1);
         }
 
         protected override void CreateNestedHitObjects(CancellationToken cancellationToken)
@@ -240,7 +233,7 @@ namespace osu.Game.Rulesets.Osu.Objects
                 HeadCircle.Samples = this.GetNodeSamples(0);
         }
 
-        public override Judgement CreateJudgement() => OnlyJudgeNestedObjects ? new OsuIgnoreJudgement() : new OsuJudgement();
+        public override Judgement CreateJudgement() => new OsuIgnoreJudgement();
 
         protected override HitWindows CreateHitWindows() => HitWindows.Empty;
     }

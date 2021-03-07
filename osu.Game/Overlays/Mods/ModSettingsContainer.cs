@@ -52,7 +52,6 @@ namespace osu.Game.Overlays.Mods
                     new OsuScrollContainer
                     {
                         RelativeSizeAxes = Axes.Both,
-                        ScrollbarVisible = false,
                         Child = modSettingsContent = new FillFlowContainer<ModControlSection>
                         {
                             Anchor = Anchor.TopCentre,

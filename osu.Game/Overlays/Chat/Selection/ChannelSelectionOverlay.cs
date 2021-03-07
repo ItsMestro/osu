@@ -131,7 +131,11 @@ namespace osu.Game.Overlays.Chat.Selection
             {
                 sectionsFlow.ChildrenEnumerable = new[]
                 {
-                    new ChannelSection { Channels = channels, },
+                    new ChannelSection
+                    {
+                        Header = "All Channels",
+                        Channels = channels,
+                    },
                 };
 
                 foreach (ChannelSection s in sectionsFlow.Children)

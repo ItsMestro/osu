@@ -4,7 +4,6 @@
 using System;
 using osu.Framework.Allocation;
 using osu.Framework.Bindables;
-using osu.Game.Beatmaps;
 using osu.Game.Graphics;
 using osu.Game.Online.Rooms;
 using osu.Game.Screens.OnlinePlay.Components;
@@ -15,9 +14,6 @@ namespace osu.Game.Screens.OnlinePlay.Playlists
     {
         [Resolved(typeof(Room), nameof(Room.EndDate))]
         private Bindable<DateTimeOffset?> endDate { get; set; }
-
-        [Resolved]
-        private IBindable<WorkingBeatmap> gameBeatmap { get; set; }
 
         public PlaylistsReadyButton()
         {
@@ -36,7 +32,7 @@ namespace osu.Game.Screens.OnlinePlay.Playlists
         {
             base.Update();
 
-            Enabled.Value = endDate.Value != null && DateTimeOffset.UtcNow.AddSeconds(30).AddMilliseconds(gameBeatmap.Value.Track.Length) < endDate.Value;
+            Enabled.Value = endDate.Value != null && DateTimeOffset.UtcNow.AddSeconds(30).AddMilliseconds(GameBeatmap.Value.Track.Length) < endDate.Value;
         }
     }
 }

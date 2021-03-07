@@ -2,20 +2,65 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Threading;
+using osu.Framework.Allocation;
 using osu.Framework.Bindables;
 using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
+using osu.Framework.Graphics.Shapes;
+using osu.Game.Graphics.UserInterface;
 using osu.Game.Overlays.News;
 using osu.Game.Overlays.News.Displays;
 
 namespace osu.Game.Overlays
 {
-    public class NewsOverlay : OnlineOverlay<NewsHeader>
+    public class NewsOverlay : FullscreenOverlay<NewsHeader>
     {
         private readonly Bindable<string> article = new Bindable<string>(null);
 
+        private Container content;
+        private LoadingLayer loading;
+        private OverlayScrollContainer scrollFlow;
+
         public NewsOverlay()
-            : base(OverlayColourScheme.Purple, false)
+            : base(OverlayColourScheme.Purple, new NewsHeader())
         {
+        }
+
+        [BackgroundDependencyLoader]
+        private void load()
+        {
+            Children = new Drawable[]
+            {
+                new Box
+                {
+                    RelativeSizeAxes = Axes.Both,
+                    Colour = ColourProvider.Background5,
+                },
+                scrollFlow = new OverlayScrollContainer
+                {
+                    RelativeSizeAxes = Axes.Both,
+                    ScrollbarVisible = false,
+                    Child = new FillFlowContainer
+                    {
+                        RelativeSizeAxes = Axes.X,
+                        AutoSizeAxes = Axes.Y,
+                        Direction = FillDirection.Vertical,
+                        Children = new Drawable[]
+                        {
+                            Header.With(h =>
+                            {
+                                h.ShowFrontPage = ShowFrontPage;
+                            }),
+                            content = new Container
+                            {
+                                RelativeSizeAxes = Axes.X,
+                                AutoSizeAxes = Axes.Y,
+                            }
+                        },
+                    },
+                },
+                loading = new LoadingLayer(true),
+            };
         }
 
         protected override void LoadComplete()
@@ -25,11 +70,6 @@ namespace osu.Game.Overlays
             // should not be run until first pop-in to avoid requesting data before user views.
             article.BindValueChanged(onArticleChanged);
         }
-
-        protected override NewsHeader CreateHeader() => new NewsHeader
-        {
-            ShowFrontPage = ShowFrontPage
-        };
 
         private bool displayUpdateRequired = true;
 
@@ -67,7 +107,7 @@ namespace osu.Game.Overlays
         private void onArticleChanged(ValueChangedEvent<string> e)
         {
             cancellationToken?.Cancel();
-            Loading.Show();
+            loading.Show();
 
             if (e.NewValue == null)
             {
@@ -82,11 +122,11 @@ namespace osu.Game.Overlays
 
         protected void LoadDisplay(Drawable display)
         {
-            ScrollFlow.ScrollToStart();
+            scrollFlow.ScrollToStart();
             LoadComponentAsync(display, loaded =>
             {
-                Child = loaded;
-                Loading.Hide();
+                content.Child = loaded;
+                loading.Hide();
             }, (cancellationToken = new CancellationTokenSource()).Token);
         }
 

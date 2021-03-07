@@ -44,7 +44,7 @@ namespace osu.Game.Graphics
         [Resolved]
         private NotificationOverlay notificationOverlay { get; set; }
 
-        private Sample shutter;
+        private SampleChannel shutter;
 
         [BackgroundDependencyLoader]
         private void load(OsuConfigManager config, Storage storage, AudioManager audio)

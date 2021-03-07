@@ -18,10 +18,8 @@ namespace osu.Game.Graphics.Containers
     [Cached(typeof(IPreviewTrackOwner))]
     public abstract class OsuFocusedOverlayContainer : FocusedOverlayContainer, IPreviewTrackOwner, IKeyBindingHandler<GlobalAction>
     {
-        private Sample samplePopIn;
-        private Sample samplePopOut;
-        protected virtual string PopInSampleName => "UI/overlay-pop-in";
-        protected virtual string PopOutSampleName => "UI/overlay-pop-out";
+        private SampleChannel samplePopIn;
+        private SampleChannel samplePopOut;
 
         protected override bool BlockNonPositionalInput => true;
 
@@ -42,8 +40,8 @@ namespace osu.Game.Graphics.Containers
         [BackgroundDependencyLoader(true)]
         private void load(AudioManager audio)
         {
-            samplePopIn = audio.Samples.Get(PopInSampleName);
-            samplePopOut = audio.Samples.Get(PopOutSampleName);
+            samplePopIn = audio.Samples.Get(@"UI/overlay-pop-in");
+            samplePopOut = audio.Samples.Get(@"UI/overlay-pop-out");
         }
 
         protected override void LoadComplete()

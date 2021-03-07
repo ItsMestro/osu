@@ -45,7 +45,6 @@ namespace osu.Game.Rulesets.Mania.Edit
             int minColumn = int.MaxValue;
             int maxColumn = int.MinValue;
 
-            // find min/max in an initial pass before actually performing the movement.
             foreach (var obj in EditorBeatmap.SelectedHitObjects.OfType<ManiaHitObject>())
             {
                 if (obj.Column < minColumn)
@@ -56,11 +55,8 @@ namespace osu.Game.Rulesets.Mania.Edit
 
             columnDelta = Math.Clamp(columnDelta, -minColumn, maniaPlayfield.TotalColumns - 1 - maxColumn);
 
-            EditorBeatmap.PerformOnSelection(h =>
-            {
-                if (h is ManiaHitObject maniaObj)
-                    maniaObj.Column += columnDelta;
-            });
+            foreach (var obj in EditorBeatmap.SelectedHitObjects.OfType<ManiaHitObject>())
+                obj.Column += columnDelta;
         }
     }
 }

@@ -1,27 +1,48 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using System.Linq;
+using Humanizer;
 using osu.Framework.Allocation;
+using osu.Framework.Bindables;
+using osu.Framework.Graphics;
 using osu.Framework.Screens;
 using osu.Game.Beatmaps;
 using osu.Game.Online.Rooms;
+using osu.Game.Overlays.Mods;
+using osu.Game.Rulesets.Mods;
+using osu.Game.Screens.OnlinePlay;
 using osu.Game.Screens.OnlinePlay.Components;
-using osu.Game.Screens.Select;
 
-namespace osu.Game.Screens.OnlinePlay.Playlists
+namespace osu.Game.Screens.Select
 {
-    public class PlaylistsSongSelect : OnlinePlaySongSelect
+    public class MatchSongSelect : SongSelect, IOnlinePlaySubScreen
     {
+        public Action<PlaylistItem> Selected;
+
+        public string ShortTitle => "song selection";
+        public override string Title => ShortTitle.Humanize();
+
+        public override bool AllowEditing => false;
+
+        [Resolved(typeof(Room), nameof(Room.Playlist))]
+        protected BindableList<PlaylistItem> Playlist { get; private set; }
+
         [Resolved]
         private BeatmapManager beatmaps { get; set; }
+
+        public MatchSongSelect()
+        {
+            Padding = new MarginPadding { Horizontal = HORIZONTAL_OVERFLOW_PADDING };
+        }
 
         protected override BeatmapDetailArea CreateBeatmapDetailArea() => new MatchBeatmapDetailArea
         {
             CreateNewItem = createNewItem
         };
 
-        protected override void SelectItem(PlaylistItem item)
+        protected override bool OnStart()
         {
             switch (Playlist.Count)
             {
@@ -35,6 +56,8 @@ namespace osu.Game.Screens.OnlinePlay.Playlists
             }
 
             this.Exit();
+
+            return true;
         }
 
         private void createNewItem()
@@ -56,9 +79,10 @@ namespace osu.Game.Screens.OnlinePlay.Playlists
 
             item.RequiredMods.Clear();
             item.RequiredMods.AddRange(Mods.Value.Select(m => m.CreateCopy()));
-
-            item.AllowedMods.Clear();
-            item.AllowedMods.AddRange(FreeMods.Value.Select(m => m.CreateCopy()));
         }
+
+        protected override ModSelectOverlay CreateModSelectOverlay() => new ModSelectOverlay(isValidMod);
+
+        private bool isValidMod(Mod mod) => !(mod is ModAutoplay) && (mod as MultiMod)?.Mods.Any(mm => mm is ModAutoplay) != true;
     }
 }

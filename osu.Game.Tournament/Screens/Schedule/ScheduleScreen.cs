@@ -192,7 +192,12 @@ namespace osu.Game.Tournament.Screens.Schedule
                                         Origin = Anchor.CentreLeft,
                                         Children = new Drawable[]
                                         {
-                                            new ScheduleMatchDate(match.NewValue.Date.Value)
+                                            new TournamentSpriteText
+                                            {
+                                                Text = "Starting ",
+                                                Font = OsuFont.Torus.With(size: 24, weight: FontWeight.Regular)
+                                            },
+                                            new DrawableDate(match.NewValue.Date.Value)
                                             {
                                                 Font = OsuFont.Torus.With(size: 24, weight: FontWeight.Regular)
                                             }
@@ -244,18 +249,6 @@ namespace osu.Game.Tournament.Screens.Schedule
                     });
                 }
             }
-        }
-
-        public class ScheduleMatchDate : DrawableDate
-        {
-            public ScheduleMatchDate(DateTimeOffset date, float textSize = OsuFont.DEFAULT_FONT_SIZE, bool italic = true)
-                : base(date, textSize, italic)
-            {
-            }
-
-            protected override string Format() => Date < DateTimeOffset.Now
-                ? $"Started {base.Format()}"
-                : $"Starting {base.Format()}";
         }
 
         public class ScheduleContainer : Container

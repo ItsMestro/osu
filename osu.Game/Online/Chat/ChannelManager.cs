@@ -152,7 +152,7 @@ namespace osu.Game.Online.Chat
 
                     createNewPrivateMessageRequest.Failure += exception =>
                     {
-                        handlePostException(exception);
+                        Logger.Error(exception, "Posting message failed.");
                         target.ReplaceMessage(message, null);
                         dequeueAndRun();
                     };
@@ -171,7 +171,7 @@ namespace osu.Game.Online.Chat
 
                 req.Failure += exception =>
                 {
-                    handlePostException(exception);
+                    Logger.Error(exception, "Posting message failed.");
                     target.ReplaceMessage(message, null);
                     dequeueAndRun();
                 };
@@ -182,14 +182,6 @@ namespace osu.Game.Online.Chat
             // always run if the queue is empty
             if (postQueue.Count == 1)
                 dequeueAndRun();
-        }
-
-        private static void handlePostException(Exception exception)
-        {
-            if (exception is APIException apiException)
-                Logger.Log(apiException.Message, level: LogLevel.Important);
-            else
-                Logger.Error(exception, "Posting message failed.");
         }
 
         /// <summary>

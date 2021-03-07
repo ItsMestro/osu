@@ -4,6 +4,7 @@
 using System.Linq;
 using NUnit.Framework;
 using osu.Framework.Allocation;
+using osu.Framework.Graphics;
 using osu.Framework.Screens;
 using osu.Framework.Testing;
 using osu.Game.Graphics.Containers;
@@ -27,7 +28,12 @@ namespace osu.Game.Tests.Visual.Playlists
         {
             base.SetUpSteps();
 
-            AddStep("push screen", () => LoadScreen(loungeScreen = new PlaylistsLoungeSubScreen()));
+            AddStep("push screen", () => LoadScreen(loungeScreen = new PlaylistsLoungeSubScreen
+            {
+                Anchor = Anchor.Centre,
+                Origin = Anchor.Centre,
+                Width = 0.5f,
+            }));
 
             AddUntilStep("wait for present", () => loungeScreen.IsCurrentScreen());
         }

@@ -18,7 +18,7 @@ namespace osu.Game.Rulesets.Osu.Skinning.Default
 
         public string Text
         {
-            get => number.Text.ToString();
+            get => number.Text;
             set => number.Text = value;
         }
 

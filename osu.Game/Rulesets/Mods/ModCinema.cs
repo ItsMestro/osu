@@ -14,7 +14,7 @@ namespace osu.Game.Rulesets.Mods
     {
         public virtual void ApplyToDrawableRuleset(DrawableRuleset<T> drawableRuleset)
         {
-            drawableRuleset.SetReplayScore(CreateReplayScore(drawableRuleset.Beatmap, drawableRuleset.Mods));
+            drawableRuleset.SetReplayScore(CreateReplayScore(drawableRuleset.Beatmap));
 
             // AlwaysPresent required for hitsounds
             drawableRuleset.Playfield.AlwaysPresent = true;

@@ -23,17 +23,16 @@ namespace osu.Game.Screens.Play
         /// </summary>
         public IBindable<bool> IsBreakTime => isBreakTime;
 
-        private readonly BindableBool isBreakTime = new BindableBool(true);
+        private readonly BindableBool isBreakTime = new BindableBool();
 
         public IReadOnlyList<BreakPeriod> Breaks
         {
             set
             {
+                isBreakTime.Value = false;
+
                 breaks = new PeriodTracker(value.Where(b => b.HasEffect)
                                                 .Select(b => new Period(b.StartTime, b.EndTime - BreakOverlay.BREAK_FADE_DURATION)));
-
-                if (IsLoaded)
-                    updateBreakTime();
             }
         }
 
@@ -46,11 +45,7 @@ namespace osu.Game.Screens.Play
         protected override void Update()
         {
             base.Update();
-            updateBreakTime();
-        }
 
-        private void updateBreakTime()
-        {
             var time = Clock.CurrentTime;
 
             isBreakTime.Value = breaks?.IsInAny(time) == true

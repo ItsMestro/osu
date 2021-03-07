@@ -31,7 +31,6 @@ using osu.Game.Input;
 using osu.Game.Input.Bindings;
 using osu.Game.IO;
 using osu.Game.Online;
-using osu.Game.Online.Chat;
 using osu.Game.Online.Multiplayer;
 using osu.Game.Online.Spectator;
 using osu.Game.Overlays;
@@ -99,14 +98,7 @@ namespace osu.Game
         [Cached(typeof(IBindable<RulesetInfo>))]
         protected readonly Bindable<RulesetInfo> Ruleset = new Bindable<RulesetInfo>();
 
-        /// <summary>
-        /// The current mod selection for the local user.
-        /// </summary>
-        /// <remarks>
-        /// If a mod select overlay is present, mod instances set to this value are not guaranteed to remain as the provided instance and will be overwritten by a copy.
-        /// In such a case, changes to settings of a mod will *not* propagate after a mod is added to this collection.
-        /// As such, all settings should be finalised before adding a mod to this collection.
-        /// </remarks>
+        // todo: move this to SongSelect once Screen has the ability to unsuspend.
         [Cached]
         [Cached(typeof(IBindable<IReadOnlyList<Mod>>))]
         protected readonly Bindable<IReadOnlyList<Mod>> SelectedMods = new Bindable<IReadOnlyList<Mod>>(Array.Empty<Mod>());
@@ -155,13 +147,6 @@ namespace osu.Game
         private DatabaseContextFactory contextFactory;
 
         protected override UserInputManager CreateUserInputManager() => new OsuUserInputManager();
-
-        /// <summary>
-        /// The maximum volume at which audio tracks should playback. This can be set lower than 1 to create some head-room for sound effects.
-        /// </summary>
-        internal const double GLOBAL_TRACK_VOLUME_ADJUST = 0.5;
-
-        private readonly BindableNumber<double> globalTrackVolumeAdjust = new BindableNumber<double>(GLOBAL_TRACK_VOLUME_ADJUST);
 
         [BackgroundDependencyLoader]
         private void load()
@@ -231,9 +216,7 @@ namespace osu.Game
 
             EndpointConfiguration endpoints = UseDevelopmentServer ? (EndpointConfiguration)new DevelopmentEndpointConfiguration() : new ProductionEndpointConfiguration();
 
-            MessageFormatter.WebsiteRootUrl = endpoints.WebsiteRootUrl;
-
-            dependencies.CacheAs(API ??= new APIAccess(LocalConfig, endpoints, VersionHash));
+            dependencies.CacheAs(API ??= new APIAccess(LocalConfig, endpoints));
 
             dependencies.CacheAs(spectatorStreaming = new SpectatorStreamingClient(endpoints));
             dependencies.CacheAs(multiplayerClient = new MultiplayerClient(endpoints));
@@ -288,10 +271,9 @@ namespace osu.Game
             RegisterImportHandler(ScoreManager);
             RegisterImportHandler(SkinManager);
 
-            // drop track volume game-wide to leave some head-room for UI effects / samples.
-            // this means that for the time being, gameplay sample playback is louder relative to the audio track, compared to stable.
-            // we may want to revisit this if users notice or complain about the difference (consider this a bit of a trial).
-            Audio.Tracks.AddAdjustment(AdjustableProperty.Volume, globalTrackVolumeAdjust);
+            // tracks play so loud our samples can't keep up.
+            // this adds a global reduction of track volume for the time being.
+            Audio.Tracks.AddAdjustment(AdjustableProperty.Volume, new BindableDouble(0.8));
 
             Beatmap = new NonNullableBindable<WorkingBeatmap>(defaultBeatmap);
 

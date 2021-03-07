@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using osu.Framework.Allocation;
 using osu.Framework.Extensions;
-using osu.Framework.Extensions.EnumExtensions;
 using osu.Game.Graphics;
 using osu.Game.Graphics.Containers;
 using osu.Game.Graphics.Sprites;
@@ -16,6 +15,7 @@ using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.UI;
 using osu.Game.Scoring;
 using osu.Game.Users.Drawables;
+using osu.Game.Utils;
 using osuTK;
 using osuTK.Graphics;
 
@@ -105,7 +105,7 @@ namespace osu.Game.Overlays.BeatmapSet.Scores
 
             var ruleset = scores.First().Ruleset.CreateInstance();
 
-            foreach (var result in EnumExtensions.GetValuesInOrder<HitResult>())
+            foreach (var result in OrderAttributeUtils.GetValuesInOrder<HitResult>())
             {
                 if (!allScoreStatistics.Contains(result))
                     continue;

@@ -13,7 +13,6 @@ using osu.Framework.Graphics.Audio;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.IO.Stores;
 using osu.Framework.Testing;
-using osu.Framework.Utils;
 using osu.Game.Audio;
 using osu.Game.IO;
 using osu.Game.Rulesets;
@@ -36,7 +35,7 @@ namespace osu.Game.Tests.Gameplay
         public void TestRetrieveTopLevelSample()
         {
             ISkin skin = null;
-            Sample channel = null;
+            SampleChannel channel = null;
 
             AddStep("create skin", () => skin = new TestSkin("test-sample", this));
             AddStep("retrieve sample", () => channel = skin.GetSample(new SampleInfo("test-sample")));
@@ -48,7 +47,7 @@ namespace osu.Game.Tests.Gameplay
         public void TestRetrieveSampleInSubFolder()
         {
             ISkin skin = null;
-            Sample channel = null;
+            SampleChannel channel = null;
 
             AddStep("create skin", () => skin = new TestSkin("folder/test-sample", this));
             AddStep("retrieve sample", () => channel = skin.GetSample(new SampleInfo("folder/test-sample")));
@@ -91,7 +90,6 @@ namespace osu.Game.Tests.Gameplay
         public void TestSamplePlaybackWithRateMods(Type expectedMod, double expectedRate)
         {
             GameplayClockContainer gameplayContainer = null;
-            StoryboardSampleInfo sampleInfo = null;
             TestDrawableStoryboardSample sample = null;
 
             Mod testedMod = Activator.CreateInstance(expectedMod) as Mod;
@@ -103,7 +101,7 @@ namespace osu.Game.Tests.Gameplay
                     break;
 
                 case ModTimeRamp m:
-                    m.FinalRate.Value = m.InitialRate.Value = expectedRate;
+                    m.InitialRate.Value = m.FinalRate.Value = expectedRate;
                     break;
             }
 
@@ -119,7 +117,7 @@ namespace osu.Game.Tests.Gameplay
                     Child = beatmapSkinSourceContainer
                 });
 
-                beatmapSkinSourceContainer.Add(sample = new TestDrawableStoryboardSample(sampleInfo = new StoryboardSampleInfo("test-sample", 1, 1))
+                beatmapSkinSourceContainer.Add(sample = new TestDrawableStoryboardSample(new StoryboardSampleInfo("test-sample", 1, 1))
                 {
                     Clock = gameplayContainer.GameplayClock
                 });
@@ -127,10 +125,7 @@ namespace osu.Game.Tests.Gameplay
 
             AddStep("start", () => gameplayContainer.Start());
 
-            AddAssert("sample playback rate matches mod rates", () =>
-                testedMod != null && Precision.AlmostEquals(
-                    sample.ChildrenOfType<DrawableSample>().First().AggregateFrequency.Value,
-                    ((IApplicableToRate)testedMod).ApplyToRate(sampleInfo.StartTime)));
+            AddAssert("sample playback rate matches mod rates", () => sample.ChildrenOfType<DrawableSample>().First().AggregateFrequency.Value == expectedRate);
         }
 
         private class TestSkin : LegacySkin

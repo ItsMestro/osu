@@ -29,6 +29,13 @@ namespace osu.Game.Tournament.Screens.Drawings
         private ScrollingTeamContainer teamsContainer;
         private GroupContainer groupsContainer;
         private TournamentSpriteText fullTeamNameText;
+        private TournamentSpriteText playerOneText;
+        private TournamentSpriteText playerTwoText;
+        private TournamentSpriteText playerThreeText;
+        private TournamentSpriteText playerFourText;
+        private TournamentSpriteText playerFiveText;
+        private TournamentSpriteText playerSixText;
+        private DrawableTournamentHeaderLogo logo;
 
         private readonly List<TournamentTeam> allTeams = new List<TournamentTeam>();
 
@@ -70,6 +77,13 @@ namespace osu.Game.Tournament.Screens.Drawings
                             FillMode = FillMode.Fill,
                             Texture = textures.Get(@"Backgrounds/Drawings/background.png")
                         },
+                        logo = new DrawableTournamentHeaderLogo
+                        {
+                            Anchor = Anchor.TopCentre,
+                            Origin = Anchor.TopCentre,
+                            Alpha = 1,
+                            Position = new Vector2(0, 35f)
+                        },
                         // Visualiser
                         new VisualiserContainer
                         {
@@ -78,8 +92,9 @@ namespace osu.Game.Tournament.Screens.Drawings
 
                             RelativeSizeAxes = Axes.X,
                             Size = new Vector2(1, 10),
+                            Position = new Vector2(0, -80f),
 
-                            Colour = new Color4(255, 204, 34, 255),
+                            Colour = new Color4(255, 255, 255, 255),
 
                             Lines = 6
                         },
@@ -94,7 +109,7 @@ namespace osu.Game.Tournament.Screens.Drawings
 
                             Padding = new MarginPadding
                             {
-                                Top = 35f,
+                                Top = 380f,
                                 Bottom = 35f
                             }
                         },
@@ -103,6 +118,7 @@ namespace osu.Game.Tournament.Screens.Drawings
                         {
                             Anchor = Anchor.Centre,
                             Origin = Anchor.Centre,
+                            Position = new Vector2(0, -80f),
 
                             RelativeSizeAxes = Axes.X,
                         },
@@ -112,13 +128,91 @@ namespace osu.Game.Tournament.Screens.Drawings
                             Anchor = Anchor.Centre,
                             Origin = Anchor.TopCentre,
 
-                            Position = new Vector2(0, 45f),
+                            Position = new Vector2(0, -200f),
 
                             Colour = OsuColour.Gray(0.95f),
 
                             Alpha = 0,
 
-                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 42),
+                            Font = OsuFont.Torus.With(weight: FontWeight.SemiBold, size: 46),
+                        },
+                        playerOneText = new TournamentSpriteText
+                        {
+                            Anchor = Anchor.Centre,
+                            Origin = Anchor.TopCentre,
+
+                            Position = new Vector2(0, -220f),
+
+                            Colour = OsuColour.Gray(0.95f),
+
+                            Alpha = 0,
+
+                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 36),
+                        },
+                        playerTwoText = new TournamentSpriteText
+                        {
+                            Anchor = Anchor.Centre,
+                            Origin = Anchor.TopCentre,
+
+                            Position = new Vector2(0, -190f),
+
+                            Colour = OsuColour.Gray(0.95f),
+
+                            Alpha = 0,
+
+                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 36),
+                        },
+                        playerThreeText = new TournamentSpriteText
+                        {
+                            Anchor = Anchor.Centre,
+                            Origin = Anchor.TopCentre,
+
+                            Position = new Vector2(0, -160f),
+
+                            Colour = OsuColour.Gray(0.95f),
+
+                            Alpha = 0,
+
+                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 36),
+                        },
+                        playerFourText = new TournamentSpriteText
+                        {
+                            Anchor = Anchor.Centre,
+                            Origin = Anchor.TopCentre,
+
+                            Position = new Vector2(0, -130f),
+
+                            Colour = OsuColour.Gray(0.95f),
+
+                            Alpha = 0,
+
+                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 36),
+                        },
+                        playerFiveText = new TournamentSpriteText
+                        {
+                            Anchor = Anchor.Centre,
+                            Origin = Anchor.TopCentre,
+
+                            Position = new Vector2(0, -100f),
+
+                            Colour = OsuColour.Gray(0.95f),
+
+                            Alpha = 0,
+
+                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 36),
+                        },
+                        playerSixText = new TournamentSpriteText
+                        {
+                            Anchor = Anchor.Centre,
+                            Origin = Anchor.TopCentre,
+
+                            Position = new Vector2(0, -70f),
+
+                            Colour = OsuColour.Gray(0.95f),
+
+                            Alpha = 0,
+
+                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 36),
                         }
                     }
                 },
@@ -159,6 +253,13 @@ namespace osu.Game.Tournament.Screens.Drawings
 
             teamsContainer.OnSelected += onTeamSelected;
             teamsContainer.OnScrollStarted += () => fullTeamNameText.FadeOut(200);
+            teamsContainer.OnScrollStarted += () => playerOneText.FadeOut(200);
+            teamsContainer.OnScrollStarted += () => playerTwoText.FadeOut(200);
+            teamsContainer.OnScrollStarted += () => playerThreeText.FadeOut(200);
+            teamsContainer.OnScrollStarted += () => playerFourText.FadeOut(200);
+            teamsContainer.OnScrollStarted += () => playerFiveText.FadeOut(200);
+            teamsContainer.OnScrollStarted += () => playerSixText.FadeOut(200);
+
 
             reset(true);
         }
@@ -169,6 +270,18 @@ namespace osu.Game.Tournament.Screens.Drawings
 
             fullTeamNameText.Text = team.FullName.Value;
             fullTeamNameText.FadeIn(200);
+            playerOneText.Text = team.PlayerOne.Value;
+            playerOneText.FadeIn(200);
+            playerTwoText.Text = team.PlayerTwo.Value;
+            playerTwoText.FadeIn(200);
+            playerThreeText.Text = team.PlayerThree.Value;
+            playerThreeText.FadeIn(200);
+            playerFourText.Text = team.PlayerFour.Value;
+            playerFourText.FadeIn(200);
+            playerFiveText.Text = team.PlayerFive.Value;
+            playerFiveText.FadeIn(200);
+            playerSixText.Text = team.PlayerSix.Value;
+            playerSixText.FadeIn(200);
 
             writeResults(groupsContainer.GetStringRepresentation());
         }

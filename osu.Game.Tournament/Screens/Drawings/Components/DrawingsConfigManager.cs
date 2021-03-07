@@ -13,7 +13,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
         protected override void InitialiseDefaults()
         {
             Set(DrawingsConfig.Groups, 8, 1, 8);
-            Set(DrawingsConfig.TeamsPerGroup, 8, 1, 8);
+            Set(DrawingsConfig.TeamsPerGroup, 8, 1, 15);
         }
 
         public DrawingsConfigManager(Storage storage)

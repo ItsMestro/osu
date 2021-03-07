@@ -5,10 +5,12 @@ using System.ComponentModel;
 using osu.Framework.Allocation;
 using osu.Framework.Audio;
 using osu.Framework.Audio.Sample;
+using osu.Framework.Bindables;
 using osu.Framework.Extensions;
 using osu.Framework.Graphics;
+using osu.Framework.Graphics.Containers;
+using osu.Framework.Input.Events;
 using osu.Game.Configuration;
-using osu.Framework.Utils;
 
 namespace osu.Game.Graphics.UserInterface
 {
@@ -16,11 +18,18 @@ namespace osu.Game.Graphics.UserInterface
     /// Adds hover sounds to a drawable.
     /// Does not draw anything.
     /// </summary>
-    public class HoverSounds : HoverSampleDebounceComponent
+    public class HoverSounds : CompositeDrawable
     {
-        private Sample sampleHover;
+        private SampleChannel sampleHover;
+
+        /// <summary>
+        /// Length of debounce for hover sound playback, in milliseconds.
+        /// </summary>
+        public double HoverDebounceTime { get; } = 20;
 
         protected readonly HoverSampleSet SampleSet;
+
+        private Bindable<double?> lastPlaybackTime;
 
         public HoverSounds(HoverSampleSet sampleSet = HoverSampleSet.Normal)
         {
@@ -31,13 +40,22 @@ namespace osu.Game.Graphics.UserInterface
         [BackgroundDependencyLoader]
         private void load(AudioManager audio, SessionStatics statics)
         {
+            lastPlaybackTime = statics.GetBindable<double?>(Static.LastHoverSoundPlaybackTime);
+
             sampleHover = audio.Samples.Get($@"UI/generic-hover{SampleSet.GetDescription()}");
         }
 
-        public override void PlayHoverSample()
+        protected override bool OnHover(HoverEvent e)
         {
-            sampleHover.Frequency.Value = 0.96 + RNG.NextDouble(0.08);
-            sampleHover.Play();
+            bool enoughTimePassedSinceLastPlayback = !lastPlaybackTime.Value.HasValue || Time.Current - lastPlaybackTime.Value >= HoverDebounceTime;
+
+            if (enoughTimePassedSinceLastPlayback)
+            {
+                sampleHover?.Play();
+                lastPlaybackTime.Value = Time.Current;
+            }
+
+            return base.OnHover(e);
         }
     }
 
@@ -50,9 +68,6 @@ namespace osu.Game.Graphics.UserInterface
         Normal,
 
         [Description("-softer")]
-        Soft,
-
-        [Description("-toolbar")]
-        Toolbar
+        Soft
     }
 }

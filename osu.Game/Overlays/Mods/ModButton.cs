@@ -46,9 +46,8 @@ namespace osu.Game.Overlays.Mods
         /// Change the selected mod index of this button.
         /// </summary>
         /// <param name="newIndex">The new index.</param>
-        /// <param name="resetSettings">Whether any settings applied to the mod should be reset on selection.</param>
         /// <returns>Whether the selection changed.</returns>
-        private bool changeSelectedIndex(int newIndex, bool resetSettings = true)
+        private bool changeSelectedIndex(int newIndex)
         {
             if (newIndex == selectedIndex) return false;
 
@@ -69,9 +68,6 @@ namespace osu.Game.Overlays.Mods
             selectedIndex = newIndex;
 
             Mod newSelection = SelectedMod ?? Mods[0];
-
-            if (resetSettings)
-                newSelection.ResetSettingsToDefaults();
 
             Schedule(() =>
             {
@@ -213,17 +209,11 @@ namespace osu.Game.Overlays.Mods
             Deselect();
         }
 
-        /// <summary>
-        /// Select the mod at the provided index.
-        /// </summary>
-        /// <param name="index">The index to select.</param>
-        /// <param name="resetSettings">Whether any settings applied to the mod should be reset on selection.</param>
-        /// <returns>Whether the selection changed.</returns>
-        public bool SelectAt(int index, bool resetSettings = true)
+        public bool SelectAt(int index)
         {
             if (!Mods[index].HasImplementation) return false;
 
-            changeSelectedIndex(index, resetSettings);
+            changeSelectedIndex(index);
             return true;
         }
 
@@ -246,13 +236,13 @@ namespace osu.Game.Overlays.Mods
             {
                 iconsContainer.AddRange(new[]
                 {
-                    backgroundIcon = new ModIcon(Mods[1], false)
+                    backgroundIcon = new PassThroughTooltipModIcon(Mods[1])
                     {
                         Origin = Anchor.BottomRight,
                         Anchor = Anchor.BottomRight,
                         Position = new Vector2(1.5f),
                     },
-                    foregroundIcon = new ModIcon(Mods[0], false)
+                    foregroundIcon = new PassThroughTooltipModIcon(Mods[0])
                     {
                         Origin = Anchor.BottomRight,
                         Anchor = Anchor.BottomRight,
@@ -262,7 +252,7 @@ namespace osu.Game.Overlays.Mods
             }
             else
             {
-                iconsContainer.Add(foregroundIcon = new ModIcon(Mod, false)
+                iconsContainer.Add(foregroundIcon = new PassThroughTooltipModIcon(Mod)
                 {
                     Origin = Anchor.Centre,
                     Anchor = Anchor.Centre,
@@ -306,6 +296,16 @@ namespace osu.Game.Overlays.Mods
             };
 
             Mod = mod;
+        }
+
+        private class PassThroughTooltipModIcon : ModIcon
+        {
+            public override string TooltipText => null;
+
+            public PassThroughTooltipModIcon(Mod mod)
+                : base(mod)
+            {
+            }
         }
     }
 }

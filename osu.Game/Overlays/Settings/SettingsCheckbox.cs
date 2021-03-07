@@ -2,22 +2,20 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using osu.Framework.Graphics;
-using osu.Framework.Localisation;
 using osu.Game.Graphics.UserInterface;
 
 namespace osu.Game.Overlays.Settings
 {
     public class SettingsCheckbox : SettingsItem<bool>
     {
-        private LocalisableString labelText;
+        private string labelText;
 
         protected override Drawable CreateControl() => new OsuCheckbox();
 
-        public override LocalisableString LabelText
+        public override string LabelText
         {
             get => labelText;
-            // checkbox doesn't properly support localisation yet.
-            set => ((OsuCheckbox)Control).LabelText = (labelText = value).ToString();
+            set => ((OsuCheckbox)Control).LabelText = labelText = value;
         }
     }
 }

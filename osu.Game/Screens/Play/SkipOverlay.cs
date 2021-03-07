@@ -230,7 +230,7 @@ namespace osu.Game.Screens.Play
             private Box background;
             private AspectContainer aspect;
 
-            private Sample sampleConfirm;
+            private SampleChannel sampleConfirm;
 
             public Button()
             {

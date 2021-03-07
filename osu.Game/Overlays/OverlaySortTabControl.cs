@@ -17,7 +17,6 @@ using osu.Game.Overlays.Comments;
 using JetBrains.Annotations;
 using System;
 using osu.Framework.Extensions;
-using osu.Framework.Localisation;
 
 namespace osu.Game.Overlays
 {
@@ -31,7 +30,7 @@ namespace osu.Game.Overlays
             set => current.Current = value;
         }
 
-        public LocalisableString Title
+        public string Title
         {
             get => text.Text;
             set => text.Text = value;

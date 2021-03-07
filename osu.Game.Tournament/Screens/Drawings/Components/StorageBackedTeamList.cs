@@ -48,12 +48,124 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                                 continue;
                             }
 
-                            teams.Add(new TournamentTeam
+                            try
                             {
-                                FullName = { Value = split[1].Trim(), },
-                                Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
-                                FlagName = { Value = split[0].Trim() }
-                            });
+                                teams.Add(new TournamentTeam
+                                {
+                                    FullName = { Value = split[1].Trim(), },
+                                    Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                    FlagName = { Value = split[0].Trim() },
+                                    //PlayerOne = { Value = split[3].Trim() },
+                                    //PlayerTwo = { Value = split[4].Trim() },
+                                    //PlayerThree = { Value = split[5].Trim() },
+                                    //PlayerFour = { Value = split[6].Trim() },
+                                    //PlayerFive = { Value = split[7].Trim() },
+                                    //PlayerSix = { Value = split[8].Trim() }
+                                });
+                            }
+                            catch
+                            {
+                                try
+                                {
+                                    teams.Add(new TournamentTeam
+                                    {
+                                        FullName = { Value = split[1].Trim(), },
+                                        Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                        FlagName = { Value = split[0].Trim() },
+                                        PlayerOne = { Value = split[3].Trim() },
+                                        PlayerTwo = { Value = split[4].Trim() },
+                                        PlayerThree = { Value = split[5].Trim() },
+                                        PlayerFour = { Value = split[6].Trim() },
+                                        PlayerFive = { Value = split[7].Trim() },
+                                        PlayerSix = { Value = null }
+                                    });
+                                }
+                                catch
+                                {
+                                    try
+                                    {
+                                        teams.Add(new TournamentTeam
+                                        {
+                                            FullName = { Value = split[1].Trim(), },
+                                            Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                            FlagName = { Value = split[0].Trim() },
+                                            PlayerOne = { Value = split[3].Trim() },
+                                            PlayerTwo = { Value = split[4].Trim() },
+                                            PlayerThree = { Value = split[5].Trim() },
+                                            PlayerFour = { Value = split[6].Trim() },
+                                            PlayerFive = { Value = null },
+                                            PlayerSix = { Value = null }
+                                        });
+                                    }
+                                    catch
+                                    {
+                                        teams.Add(new TournamentTeam
+                                        {
+                                            FullName = { Value = split[1].Trim(), },
+                                            Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                            FlagName = { Value = split[0].Trim() },
+                                            PlayerOne = { Value = split[3].Trim() },
+                                            PlayerTwo = { Value = split[4].Trim() },
+                                            PlayerThree = { Value = split[5].Trim() },
+                                            PlayerFour = { Value = null },
+                                            PlayerFive = { Value = null },
+                                            PlayerSix = { Value = null }
+                                        });
+                                    }
+                                }
+                            }
+                            //}
+                            //catch
+                            //{
+                                //try
+                                //{
+                                //teams.Add(new TournamentTeam
+                                //{
+                                //    FullName = { Value = split[1].Trim(), },
+                                //    Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                //    FlagName = { Value = split[0].Trim() },
+                                //    PlayerOne = { Value = split[3].Trim() },
+                                //    PlayerTwo = { Value = split[4].Trim() },
+                                //    PlayerThree = { Value = split[5].Trim() },
+                                //    PlayerFour = { Value = split[6].Trim() },
+                                //    PlayerFive = { Value = split[7].Trim() },
+                                //    PlayerSix = { Value = null }
+                                //});
+                                //}
+                                //catch
+                                //{
+                                    //try
+                                    //{
+                                    //    teams.Add(new TournamentTeam
+                                    //    {
+                                    //        FullName = { Value = split[1].Trim(), },
+                                    //        Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                    //        FlagName = { Value = split[0].Trim() },
+                                    //        PlayerOne = { Value = split[3].Trim() },
+                                    //        PlayerTwo = { Value = split[4].Trim() },
+                                    //        PlayerThree = { Value = split[5].Trim() },
+                                    //        PlayerFour = { Value = split[6].Trim() },
+                                    //        PlayerFive = { Value = null },
+                                    //        PlayerSix = { Value = null }
+                                    //    });
+                                    //}
+                                    //catch
+                                    //{
+                                    //    teams.Add(new TournamentTeam
+                                    //    {
+                                    //        FullName = { Value = split[1].Trim(), },
+                                    //        Acronym = { Value = split.Length >= 3 ? split[2].Trim() : null, },
+                                    //        FlagName = { Value = split[0].Trim() },
+                                    //        PlayerOne = { Value = split[3].Trim() },
+                                    //        PlayerTwo = { Value = split[4].Trim() },
+                                    //        PlayerThree = { Value = split[5].Trim() },
+                                    //        PlayerFour = { Value = null },
+                                    //        PlayerFive = { Value = null },
+                                    //        PlayerSix = { Value = null }
+                                    //    });
+                                    //}
+                                //}
+                            //}
                         }
                     }
                 }

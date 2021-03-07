@@ -1,7 +1,6 @@
 ﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using osu.Framework.Allocation;
@@ -12,7 +11,6 @@ using osu.Framework.Graphics;
 using osu.Framework.Input;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.ControlPoints;
-using osu.Game.Configuration;
 using osu.Game.Input.Handlers;
 using osu.Game.Replays;
 using osu.Game.Rulesets.Mania.Beatmaps;
@@ -50,22 +48,6 @@ namespace osu.Game.Rulesets.Mania.UI
         protected override bool RelativeScaleBeatLengths => true;
 
         protected new ManiaRulesetConfigManager Config => (ManiaRulesetConfigManager)base.Config;
-
-        public ScrollVisualisationMethod ScrollMethod
-        {
-            get => scrollMethod;
-            set
-            {
-                if (IsLoaded)
-                    throw new InvalidOperationException($"Can't alter {nameof(ScrollMethod)} after ruleset is already loaded");
-
-                scrollMethod = value;
-            }
-        }
-
-        private ScrollVisualisationMethod scrollMethod = ScrollVisualisationMethod.Sequential;
-
-        protected override ScrollVisualisationMethod VisualisationMethod => scrollMethod;
 
         private readonly Bindable<ManiaScrollingDirection> configDirection = new Bindable<ManiaScrollingDirection>();
         private readonly Bindable<double> configTimeRange = new BindableDouble();

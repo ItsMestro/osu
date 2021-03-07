@@ -5,7 +5,6 @@ using System.Linq;
 using osu.Game.Rulesets.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Difficulty.Skills;
 using osu.Game.Rulesets.Difficulty.Utils;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Taiko.Difficulty.Preprocessing;
 using osu.Game.Rulesets.Taiko.Objects;
 
@@ -49,10 +48,8 @@ namespace osu.Game.Rulesets.Taiko.Difficulty.Skills
         /// <summary>
         /// Creates a <see cref="Stamina"/> skill.
         /// </summary>
-        /// <param name="mods">Mods for use in skill calculations.</param>
         /// <param name="rightHand">Whether this instance is performing calculations for the right hand.</param>
-        public Stamina(Mod[] mods, bool rightHand)
-            : base(mods)
+        public Stamina(bool rightHand)
         {
             hand = rightHand ? 1 : 0;
         }

@@ -21,8 +21,8 @@ namespace osu.Game.Screens.Menu
         protected override string BeatmapHash => "64e00d7022195959bfa3109d09c2e2276c8f12f486b91fcf6175583e973b48f2";
         protected override string BeatmapFile => "welcome.osz";
         private const double delay_step_two = 2142;
-        private Sample welcome;
-        private Sample pianoReverb;
+        private SampleChannel welcome;
+        private SampleChannel pianoReverb;
         protected override string SeeyaSampleName => "Intro/Welcome/seeya";
 
         protected override BackgroundScreen CreateBackground() => background = new BackgroundScreenDefault(false)
@@ -56,21 +56,16 @@ namespace osu.Game.Screens.Menu
                 {
                     PrepareMenuLoad();
 
+                    intro.LogoVisualisation.AddAmplitudeSource(pianoReverb);
+
                     AddInternal(intro);
 
                     welcome?.Play();
-
-                    var reverbChannel = pianoReverb?.Play();
-                    if (reverbChannel != null)
-                        intro.LogoVisualisation.AddAmplitudeSource(reverbChannel);
+                    pianoReverb?.Play();
 
                     Scheduler.AddDelayed(() =>
                     {
                         StartTrack();
-
-                        // this classic intro loops forever.
-                        if (UsingThemedIntro)
-                            Track.Looping = true;
 
                         const float fade_in_time = 200;
 

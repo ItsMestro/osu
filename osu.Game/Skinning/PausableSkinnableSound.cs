@@ -43,33 +43,31 @@ namespace osu.Game.Skinning
             if (samplePlaybackDisabler != null)
             {
                 samplePlaybackDisabled.BindTo(samplePlaybackDisabler.SamplePlaybackDisabled);
-                samplePlaybackDisabled.BindValueChanged(SamplePlaybackDisabledChanged);
-            }
-        }
-
-        protected virtual void SamplePlaybackDisabledChanged(ValueChangedEvent<bool> disabled)
-        {
-            if (!RequestedPlaying) return;
-
-            // let non-looping samples that have already been started play out to completion (sounds better than abruptly cutting off).
-            if (!Looping) return;
-
-            cancelPendingStart();
-
-            if (disabled.NewValue)
-                base.Stop();
-            else
-            {
-                // schedule so we don't start playing a sample which is no longer alive.
-                scheduledStart = Schedule(() =>
+                samplePlaybackDisabled.BindValueChanged(disabled =>
                 {
-                    if (RequestedPlaying)
-                        base.Play();
+                    if (!RequestedPlaying) return;
+
+                    // let non-looping samples that have already been started play out to completion (sounds better than abruptly cutting off).
+                    if (!Looping) return;
+
+                    cancelPendingStart();
+
+                    if (disabled.NewValue)
+                        base.Stop();
+                    else
+                    {
+                        // schedule so we don't start playing a sample which is no longer alive.
+                        scheduledStart = Schedule(() =>
+                        {
+                            if (RequestedPlaying)
+                                base.Play();
+                        });
+                    }
                 });
             }
         }
 
-        public override void Play()
+        public override void Play(bool restart = true)
         {
             cancelPendingStart();
             RequestedPlaying = true;
@@ -77,7 +75,7 @@ namespace osu.Game.Skinning
             if (samplePlaybackDisabled.Value)
                 return;
 
-            base.Play();
+            base.Play(restart);
         }
 
         public override void Stop()
