@@ -22,6 +22,8 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
         public GroupContainer(int numGroups, int teamsPerGroup)
         {
             FlowContainer<Group> bottomGroups;
+            FlowContainer<Group> lowGroups;
+            FlowContainer<Group> highGroups;
             FlowContainer<Group> topGroups;
 
             maxTeams = teamsPerGroup;
@@ -38,6 +40,32 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                     AutoSizeAxes = Axes.Both,
 
                     Spacing = new Vector2(7f, 0)
+                },
+                highGroups = new FillFlowContainer<Group>
+                {
+                    Anchor = Anchor.TopCentre,
+                    Origin = Anchor.TopCentre,
+
+                    AutoSizeAxes = Axes.Both,
+
+                    Spacing = new Vector2(7f, 0),
+                    Padding = new MarginPadding
+                    {
+                        Top = 143f
+                    }
+                },
+                lowGroups = new FillFlowContainer<Group>
+                {
+                    Anchor = Anchor.BottomCentre,
+                    Origin = Anchor.BottomCentre,
+
+                    AutoSizeAxes = Axes.Both,
+
+                    Spacing = new Vector2(7f, 0),
+                    Padding = new MarginPadding
+                    {
+                        Bottom = 143f
+                    }
                 },
                 bottomGroups = new FillFlowContainer<Group>
                 {
@@ -57,8 +85,12 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                 groups.Add(g);
                 nextGroupName++;
 
-                if (i < (int)MathF.Ceiling(numGroups / 2f))
+                if (i < (int)MathF.Ceiling(numGroups / 4f))
                     topGroups.Add(g);
+                else if (i < (int)MathF.Ceiling(numGroups / 2f))
+                    highGroups.Add(g);
+                else if (i < (int)MathF.Ceiling(numGroups / 1.4f))
+                    lowGroups.Add(g);
                 else
                     bottomGroups.Add(g);
             }

@@ -26,8 +26,8 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
             AcronymText.Anchor = Anchor.TopCentre;
             AcronymText.Origin = Anchor.TopCentre;
             AcronymText.Text = team.Acronym.Value.ToUpperInvariant();
-            AcronymText.Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 10);
-            Flag.Scale = new Vector2(0.48f);
+            AcronymText.Font = OsuFont.Torus.With(weight: FontWeight.Bold, size: 12);
+            Flag.Scale = new Vector2(0.62f);
 
             InternalChildren = new Drawable[]
             {
@@ -40,7 +40,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
                     AutoSizeAxes = Axes.Y,
 
                     Direction = FillDirection.Vertical,
-                    Spacing = new Vector2(0, 5f),
+                    Spacing = new Vector2(0, 4f),
 
                     Children = new Drawable[]
                     {

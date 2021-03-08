@@ -77,11 +77,11 @@ namespace osu.Game.Tournament.Screens.Drawings
                             Origin = Anchor.Centre,
 
                             RelativeSizeAxes = Axes.X,
-                            Size = new Vector2(1, 10),
+                            Size = new Vector2(1, 14),
 
-                            Colour = new Color4(255, 204, 34, 255),
+                            Colour = new Color4(66, 56, 138, 255),
 
-                            Lines = 6
+                            Lines = 20
                         },
                         // Groups
                         groupsContainer = new GroupContainer(drawingsConfig.Get<int>(DrawingsConfig.Groups), drawingsConfig.Get<int>(DrawingsConfig.TeamsPerGroup))
@@ -94,8 +94,8 @@ namespace osu.Game.Tournament.Screens.Drawings
 
                             Padding = new MarginPadding
                             {
-                                Top = 35f,
-                                Bottom = 35f
+                                Top = 16f,
+                                Bottom = 16f
                             }
                         },
                         // Scrolling teams
@@ -112,13 +112,13 @@ namespace osu.Game.Tournament.Screens.Drawings
                             Anchor = Anchor.Centre,
                             Origin = Anchor.TopCentre,
 
-                            Position = new Vector2(0, 45f),
+                            Position = new Vector2(0, 32f),
 
                             Colour = OsuColour.Gray(0.95f),
 
                             Alpha = 0,
 
-                            Font = OsuFont.Torus.With(weight: FontWeight.Light, size: 42),
+                            Font = OsuFont.Torus.With(weight: FontWeight.SemiBold, size: 42),
                         }
                     }
                 },
