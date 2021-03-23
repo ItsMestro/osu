@@ -440,7 +440,7 @@ namespace osu.Game
         public override Task Import(params ImportTask[] imports)
         {
             // encapsulate task as we don't want to begin the import process until in a ready state.
-            var importTask = new Task(async () => await base.Import(imports));
+            var importTask = new Task(async () => await base.Import(imports).ConfigureAwait(false));
 
             waitForReady(() => this, _ => importTask.Start());
 
@@ -758,9 +758,15 @@ namespace osu.Game
         {
             otherOverlays.Where(o => o != overlay).ForEach(o => o.Hide());
 
-            // show above others if not visible at all, else leave at current depth.
-            if (!overlay.IsPresent)
+            // Partially visible so leave it at the current depth.
+            if (overlay.IsPresent)
+                return;
+
+            // Show above all other overlays.
+            if (overlay.IsLoaded)
                 overlayContent.ChangeChildDepth(overlay, (float)-Clock.CurrentTime);
+            else
+                overlay.Depth = (float)-Clock.CurrentTime;
         }
 
         private void forwardLoggedErrorsToNotifications()
@@ -831,7 +837,7 @@ namespace osu.Game
                 asyncLoadStream = Task.Run(async () =>
                 {
                     if (previousLoadStream != null)
-                        await previousLoadStream;
+                        await previousLoadStream.ConfigureAwait(false);
 
                     try
                     {
@@ -845,7 +851,7 @@ namespace osu.Game
 
                         // The delegate won't complete if OsuGame has been disposed in the meantime
                         while (!IsDisposed && !del.Completed)
-                            await Task.Delay(10);
+                            await Task.Delay(10).ConfigureAwait(false);
 
                         // Either we're disposed or the load process has started successfully
                         if (IsDisposed)
@@ -853,7 +859,7 @@ namespace osu.Game
 
                         Debug.Assert(task != null);
 
-                        await task;
+                        await task.ConfigureAwait(false);
 
                         Logger.Log($"Loaded {component}!", level: LogLevel.Debug);
                     }
@@ -880,17 +886,13 @@ namespace osu.Game
             switch (action)
             {
                 case GlobalAction.ResetInputSettings:
-                    frameworkConfig.GetBindable<string>(FrameworkSetting.IgnoredInputHandlers).SetDefault();
-                    frameworkConfig.GetBindable<double>(FrameworkSetting.CursorSensitivity).SetDefault();
+                    Host.ResetInputHandlers();
                     frameworkConfig.GetBindable<ConfineMouseMode>(FrameworkSetting.ConfineMouseMode).SetDefault();
                     return true;
 
-                case GlobalAction.ToggleToolbar:
-                    Toolbar.ToggleVisibility();
-                    return true;
-
                 case GlobalAction.ToggleGameplayMouseButtons:
-                    LocalConfig.Set(OsuSetting.MouseDisableButtons, !LocalConfig.Get<bool>(OsuSetting.MouseDisableButtons));
+                    var mouseDisableButtons = LocalConfig.GetBindable<bool>(OsuSetting.MouseDisableButtons);
+                    mouseDisableButtons.Value = !mouseDisableButtons.Value;
                     return true;
 
                 case GlobalAction.RandomSkin:

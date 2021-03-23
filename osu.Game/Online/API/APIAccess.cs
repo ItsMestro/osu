@@ -10,7 +10,6 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using osu.Framework;
 using osu.Framework.Bindables;
 using osu.Framework.Extensions.ExceptionExtensions;
 using osu.Framework.Extensions.ObjectExtensions;
@@ -90,7 +89,7 @@ namespace osu.Game.Online.API
             thread.Start();
         }
 
-        private void onTokenChanged(ValueChangedEvent<OAuthToken> e) => config.Set(OsuSetting.Token, config.Get<bool>(OsuSetting.SavePassword) ? authentication.TokenString : string.Empty);
+        private void onTokenChanged(ValueChangedEvent<OAuthToken> e) => config.SetValue(OsuSetting.Token, config.Get<bool>(OsuSetting.SavePassword) ? authentication.TokenString : string.Empty);
 
         internal new void Schedule(Action action) => base.Schedule(action);
 
@@ -135,7 +134,7 @@ namespace osu.Game.Online.API
                         state.Value = APIState.Connecting;
 
                         // save the username at this point, if the user requested for it to be.
-                        config.Set(OsuSetting.Username, config.Get<bool>(OsuSetting.SaveUsername) ? ProvidedUsername : string.Empty);
+                        config.SetValue(OsuSetting.Username, config.Get<bool>(OsuSetting.SaveUsername) ? ProvidedUsername : string.Empty);
 
                         if (!authentication.HasValidAccessToken && !authentication.AuthenticateWithLogin(ProvidedUsername, password))
                         {
@@ -247,14 +246,8 @@ namespace osu.Game.Online.API
             this.password = password;
         }
 
-        public IHubClientConnector GetHubConnector(string clientName, string endpoint)
-        {
-            // disabled until the underlying runtime issue is resolved, see https://github.com/mono/mono/issues/20805.
-            if (RuntimeInfo.OS == RuntimeInfo.Platform.iOS)
-                return null;
-
-            return new HubClientConnector(clientName, endpoint, this, versionHash);
-        }
+        public IHubClientConnector GetHubConnector(string clientName, string endpoint) =>
+            new HubClientConnector(clientName, endpoint, this, versionHash);
 
         public RegistrationRequest.RegistrationRequestErrors CreateAccount(string email, string username, string password)
         {
