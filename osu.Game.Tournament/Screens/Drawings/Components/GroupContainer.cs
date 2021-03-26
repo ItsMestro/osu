@@ -32,10 +32,12 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
             {
                 topGroups = new FillFlowContainer<Group>
                 {
-                    Anchor = Anchor.TopCentre,
-                    Origin = Anchor.TopCentre,
+                    Anchor = Anchor.BottomCentre,
+                    Origin = Anchor.BottomCentre,
 
                     AutoSizeAxes = Axes.Both,
+
+                    Position = new Vector2(0, -157f),
 
                     Spacing = new Vector2(7f, 0)
                 },

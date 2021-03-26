@@ -12,7 +12,7 @@ namespace osu.Game.Tournament.Screens.Drawings.Components
 
         protected override void InitialiseDefaults()
         {
-            SetDefault(DrawingsConfig.Groups, 8, 1, 8);
+            SetDefault(DrawingsConfig.Groups, 16, 1, 16);
             SetDefault(DrawingsConfig.TeamsPerGroup, 8, 1, 8);
         }
 

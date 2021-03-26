@@ -30,6 +30,10 @@ namespace osu.Game.Tournament.Models
         /// </summary>
         public Bindable<string> Acronym = new Bindable<string>(string.Empty);
 
+        public Bindable<string> PlayerOne = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerTwo = new Bindable<string>(string.Empty);
+        public Bindable<string> PlayerThree = new Bindable<string>(string.Empty);
+
         public BindableList<SeedingResult> SeedingResults = new BindableList<SeedingResult>();
 
         public double AverageRank
