@@ -31,22 +31,28 @@ namespace osu.Game.Tournament.Components
                         new FillFlowContainer
                         {
                             AutoSizeAxes = Axes.Both,
-                            Direction = FillDirection.Horizontal,
+                            Direction = FillDirection.Vertical,
                             Padding = new MarginPadding { Left = 10 },
-                            Spacing = new Vector2(30),
+                            Spacing = new Vector2(10),
                             Children = new Drawable[]
                             {
                                 new FillFlowContainer
                                 {
                                     Direction = FillDirection.Vertical,
                                     AutoSizeAxes = Axes.Both,
-                                    ChildrenEnumerable = team?.Players.Select(createPlayerText).Take(5) ?? Enumerable.Empty<Drawable>()
+                                    ChildrenEnumerable = team?.Players.Select(createPlayerText).Take(1) ?? Enumerable.Empty<Drawable>(),
                                 },
                                 new FillFlowContainer
                                 {
                                     Direction = FillDirection.Vertical,
                                     AutoSizeAxes = Axes.Both,
-                                    ChildrenEnumerable = team?.Players.Select(createPlayerText).Skip(5) ?? Enumerable.Empty<Drawable>()
+                                    ChildrenEnumerable = team?.Players.Select(createTextRank).Take(1) ?? Enumerable.Empty<Drawable>()
+                                },
+                                new FillFlowContainer
+                                {
+                                    Direction = FillDirection.Vertical,
+                                    AutoSizeAxes = Axes.Both,
+                                    ChildrenEnumerable = team?.Players.Select(createTextpp).Take(1) ?? Enumerable.Empty<Drawable>()
                                 },
                             }
                         },
@@ -57,7 +63,21 @@ namespace osu.Game.Tournament.Components
             TournamentSpriteText createPlayerText(User p) =>
                 new TournamentSpriteText
                 {
-                    Text = p.Username,
+                    Text = $"Qualifier Seed: {team.Seed}",
+                    Font = OsuFont.Torus.With(size: 24, weight: FontWeight.SemiBold),
+                    Colour = Color4.White,
+                };
+            TournamentSpriteText createTextRank(User p) =>
+                new TournamentSpriteText
+                {
+                    Text = $"Global Rank: {p.Statistics.GlobalRank}",
+                    Font = OsuFont.Torus.With(size: 24, weight: FontWeight.SemiBold),
+                    Colour = Color4.White,
+                };
+            TournamentSpriteText createTextpp(User p) =>
+                new TournamentSpriteText
+                {
+                    Text = $"Performance: {p.Statistics.PP:#,0}pp",
                     Font = OsuFont.Torus.With(size: 24, weight: FontWeight.SemiBold),
                     Colour = Color4.White,
                 };

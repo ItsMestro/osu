@@ -19,7 +19,7 @@ namespace osu.Game.Tournament.Components
                 Origin = center ? Anchor.Centre : Anchor.TopLeft,
             };
 
-            Height = 22;
+            Height = 60;
             RelativeSizeAxes = Axes.X;
         }
 
@@ -31,7 +31,7 @@ namespace osu.Game.Tournament.Components
                 RelativeSizeAxes = Axes.Both;
                 FillMode = FillMode.Fit;
 
-                Texture = textures.Get("header-text");
+                Texture = textures.Get("header-logo");
             }
         }
     }

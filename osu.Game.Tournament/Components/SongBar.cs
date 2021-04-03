@@ -211,14 +211,21 @@ namespace osu.Game.Tournament.Components
                                             {
                                                 Colour = Color4.Black,
                                                 RelativeSizeAxes = Axes.Both,
-                                                Alpha = 0.1f,
+                                                Alpha = 0,
                                             },
-                                            new OsuLogo
+                                            //new OsuLogo
+                                            //{
+                                            //    Triangles = false,
+                                            //    Scale = new Vector2(0.08f),
+                                            //    Margin = new MarginPadding(50),
+                                            //    X = -10,
+                                            //    Anchor = Anchor.CentreRight,
+                                            //    Origin = Anchor.CentreRight,
+                                            //},
+                                            new DrawableTournamentHeaderText(false)
                                             {
-                                                Triangles = false,
-                                                Scale = new Vector2(0.08f),
-                                                Margin = new MarginPadding(50),
-                                                X = -10,
+                                                X = 40,
+                                                Scale = new Vector2(0.5f),
                                                 Anchor = Anchor.CentreRight,
                                                 Origin = Anchor.CentreRight,
                                             },

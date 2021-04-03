@@ -166,7 +166,7 @@ namespace osu.Game.Tournament.Screens.Schedule
                                 Spacing = new Vector2(30),
                                 Children = new Drawable[]
                                 {
-                                    new ScheduleMatch(match.NewValue, false)
+                                    new CScheduleMatch(match.NewValue, false)
                                     {
                                         Anchor = Anchor.CentreLeft,
                                         Origin = Anchor.CentreLeft,
@@ -216,6 +216,46 @@ namespace osu.Game.Tournament.Screens.Schedule
                 Scale = new Vector2(0.8f);
 
                 CurrentMatchSelectionBox.Scale = new Vector2(1.02f, 1.15f);
+
+                bool conditional = match is ConditionalTournamentMatch;
+
+                if (conditional)
+                    Colour = OsuColour.Gray(0.5f);
+
+                if (showTimestamp)
+                {
+                    AddInternal(new DrawableDate(Match.Date.Value)
+                    {
+                        Anchor = Anchor.TopRight,
+                        Origin = Anchor.TopLeft,
+                        Colour = OsuColour.Gray(0.7f),
+                        Alpha = conditional ? 0.6f : 1,
+                        Font = OsuFont.Torus,
+                        Margin = new MarginPadding { Horizontal = 10, Vertical = 5 },
+                    });
+                    AddInternal(new TournamentSpriteText
+                    {
+                        Anchor = Anchor.BottomRight,
+                        Origin = Anchor.BottomLeft,
+                        Colour = OsuColour.Gray(0.7f),
+                        Alpha = conditional ? 0.6f : 1,
+                        Margin = new MarginPadding { Horizontal = 10, Vertical = 5 },
+                        Text = match.Date.Value.ToUniversalTime().ToString("HH:mm UTC") + (conditional ? " (conditional)" : "")
+                    });
+                }
+            }
+        }
+
+        public class CScheduleMatch : DrawableTournamentMatch
+        {
+            public CScheduleMatch(TournamentMatch match, bool showTimestamp = true)
+                : base(match)
+            {
+                Flow.Direction = FillDirection.Vertical;
+
+                Scale = new Vector2(0.8f);
+
+                CurrentMatchSelectionBox.Scale = new Vector2(1.02f, 1.1f);
 
                 bool conditional = match is ConditionalTournamentMatch;
 

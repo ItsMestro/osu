@@ -48,11 +48,25 @@ namespace osu.Game.Tournament.Models
             }
         }
 
+        public double Performance
+        {
+            get
+            {
+                var pp = Players.Select(p => p.Statistics?.PP)
+                                   .Where(i => i.HasValue)
+                                   .Select(i => i.Value)
+                                   .ToArray();
+
+                //return Convert.ToInt32(pp.First());
+                return Convert.ToDouble(pp.First());
+            }
+        }
+
         public Bindable<string> Seed = new Bindable<string>(string.Empty);
 
         public Bindable<int> LastYearPlacing = new BindableInt
         {
-            MinValue = 1,
+            MinValue = 0,
             MaxValue = 64
         };
 

@@ -69,12 +69,8 @@ namespace osu.Game.Tournament.Screens.Gameplay.Components
                         {
                             Anchor = Anchor.TopCentre,
                             Origin = Anchor.TopCentre,
-                            Alpha = showLogo ? 1 : 0
-                        },
-                        new DrawableTournamentHeaderText
-                        {
-                            Anchor = Anchor.TopCentre,
-                            Origin = Anchor.TopCentre,
+                            Alpha = 255,
+                            Scale = new Vector2(0.7f),
                         },
                         new MatchRoundDisplay
                         {
@@ -103,8 +99,6 @@ namespace osu.Game.Tournament.Screens.Gameplay.Components
         {
             teamDisplay1.ShowScore = showScores;
             teamDisplay2.ShowScore = showScores;
-
-            logo.Alpha = showLogo ? 1 : 0;
         }
     }
 }

@@ -45,20 +45,24 @@ namespace osu.Game.Tournament.Screens.Ladder.Components
             {
                 selectionBox = new Container
                 {
-                    Scale = new Vector2(1.1f),
+                    Scale = new Vector2(1.08f),
                     RelativeSizeAxes = Axes.Both,
                     Anchor = Anchor.Centre,
                     Origin = Anchor.Centre,
+                    CornerRadius = 20,
+                    Masking = true,
                     Alpha = 0,
                     Colour = Color4.YellowGreen,
                     Child = new Box { RelativeSizeAxes = Axes.Both }
                 },
                 CurrentMatchSelectionBox = new Container
                 {
-                    Scale = new Vector2(1.05f, 1.1f),
+                    Scale = new Vector2(1.04f, 1.08f),
                     RelativeSizeAxes = Axes.Both,
                     Anchor = Anchor.Centre,
                     Origin = Anchor.Centre,
+                    CornerRadius = 20,
+                    Masking = true,
                     Alpha = 0,
                     Colour = Color4.White,
                     Child = new Box { RelativeSizeAxes = Axes.Both }
