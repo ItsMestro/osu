@@ -58,6 +58,9 @@ namespace osu.Game.Tournament.Models
                                    .ToArray();
 
                 //return Convert.ToInt32(pp.First());
+                if (pp.Length == 0)
+                    return 0;
+
                 return Convert.ToDouble(pp.First());
             }
         }
