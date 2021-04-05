@@ -192,7 +192,7 @@ namespace osu.Game.Tournament.Screens.TeamIntro
                                 new Sprite
                                 {
                                     Texture = textures.Get($"mods/{mods.ToLower()}"),
-                                    Scale = new Vector2(0.8f)
+                                    Scale = new Vector2(0.25f)
                                 },
                                 new Container
                                 {
@@ -244,10 +244,10 @@ namespace osu.Game.Tournament.Screens.TeamIntro
                         Children = new Drawable[]
                         {
                             new TeamDisplay(team) { Margin = new MarginPadding { Bottom = 30 } },
+                            new RowDisplay("Seed:", team.Seed.Value) { Margin = new MarginPadding { Bottom = 6 } },
+                            new RowDisplay("Last year's seed:", team.LastYearPlacing.Value > 0 ? $"{team.LastYearPlacing:#,0}" : "N/A") { Margin = new MarginPadding { Bottom = 26 } },
                             new RowDisplay("Global Rank:", $"#{team.AverageRank:#,0}"),
-                            new RowDisplay("Performance:", $"{team.Performance:#,0}pp") { Margin = new MarginPadding { Bottom = 14 } },
-                            new RowDisplay("Seed:", team.Seed.Value),
-                            new RowDisplay("Last year's seed:", team.LastYearPlacing.Value > 0 ? $"#{team.LastYearPlacing:#,0}" : "0"),
+                            new RowDisplay("Performance:", $"{team.Performance:#,0}pp"),
                         }
                     },
                 };
