@@ -91,7 +91,11 @@ namespace osu.Game.Tournament.Screens.Gameplay.Components
                     Origin = Anchor.TopRight,
                 },
             };
+        }
 
+        protected override void LoadComplete()
+        {
+            base.LoadComplete();
             updateDisplay();
         }
 

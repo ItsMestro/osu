@@ -70,7 +70,7 @@ namespace osu.Game.Tournament.Components
             TournamentSpriteText createTextRank(User p) =>
                 new TournamentSpriteText
                 {
-                    Text = $"Global Rank: {p.Statistics.GlobalRank}",
+                    Text = $"Global Rank: {p.Statistics.GlobalRank:#,0}",
                     Font = OsuFont.Torus.With(size: 24, weight: FontWeight.SemiBold),
                     Colour = Color4.White,
                 };
