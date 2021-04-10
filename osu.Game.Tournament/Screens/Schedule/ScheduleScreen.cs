@@ -156,7 +156,7 @@ namespace osu.Game.Tournament.Screens.Schedule
                     new ScheduleContainer("coming up next")
                     {
                         RelativeSizeAxes = Axes.Both,
-                        Height = 0.25f,
+                        Height = 0.26f,
                         Children = new Drawable[]
                         {
                             new FillFlowContainer
@@ -323,7 +323,7 @@ namespace osu.Game.Tournament.Screens.Schedule
                             {
                                 Direction = FillDirection.Vertical,
                                 RelativeSizeAxes = Axes.Both,
-                                Margin = new MarginPadding(10)
+                                Margin = new MarginPadding(2)
                             },
                         }
                     },
